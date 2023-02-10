@@ -64,7 +64,8 @@ public class Task { //Класс для создания объектов зад
 
     @Override
     public String toString() {
-        String result = "Task{" +
+        String result = getClass().getSimpleName() +
+                '{' +
                 "numID-" + id +
                 ", name='" + name + '\'';
 

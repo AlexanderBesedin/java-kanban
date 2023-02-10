@@ -36,9 +36,4 @@ public class Epic extends Task { //Класс для создания объек
     public int hashCode() {
         return Objects.hash(super.hashCode(), subtasksInEpic);
     }
-
-    @Override
-    public String toString() {
-        return "Epic" + super.toString().substring(4);
-    }
 }

@@ -1,10 +1,5 @@
 import model.*;
-import service.ListsMaker;
-import service.TaskCreator;
-import service.TaskManager;
-import service.TaskRemover;
-
-import java.util.Scanner;
+import service.*;
 
 public class Main {
 
@@ -18,20 +13,14 @@ public class Main {
         Subtask subtask;
 
         TaskManager taskManager = new TaskManager();
-        TaskCreator taskCreator = new TaskCreator(
-                taskManager.getStatus(), taskManager.getTasks(),
-                taskManager.getEpics(),taskManager.getSubtasks());
-
-        TaskRemover taskRemover = new TaskRemover(taskManager.getStatus(), taskManager.getTasks(),
-                taskManager.getEpics(), taskManager.getSubtasks());
-
-        ListsMaker listsMaker = new ListsMaker(taskManager.getTasks(), taskManager.getEpics(),
-                taskManager.getSubtasks());
+        TaskCreator taskCreator = new TaskCreator();
+        TaskRemover taskRemover = new TaskRemover();
+        ListsMaker listsMaker = new ListsMaker();
 
 
         //Создал Задачу1
         name = "Забрать загранпаспорт";
-        description = "Нужно забрать забрать загранпаспорт в отделении миграции МВД №5.";
+        description = "Нужно забрать загранпаспорт в отделении миграции МВД №5.";
         task = new Task(name, description);
         taskCreator.createTask(task);
 
@@ -57,7 +46,7 @@ public class Main {
 
         // Создал вторую подзадачу
         name = "Сдать экзамен в ГИБДД";
-        description = "Сдать теорию вождение, автодром и вождение в городе на экзамене в ГИБДД.";
+        description = "Сдать теорию вождения, автодром и вождение в городе на экзамене в ГИБДД на категорию В.";
         epicId = epic.getId();
         subtask = new Subtask(name, description, epicId);
         taskCreator.createTask(subtask);
@@ -75,48 +64,47 @@ public class Main {
         taskCreator.createTask(subtask);
 
         // Печать списков созданных задач, эпиков, подзадач
-        listsMaker.getListTasks();
-        listsMaker.getListEpics();
-        listsMaker.getListSubtasks();
-        listsMaker.getSubtasksOfEpic(3);
-        listsMaker.getSubtasksOfEpic(6);
+        System.out.println(listsMaker.getListTasks());
+        System.out.println(listsMaker.getListEpics());
+        System.out.println(listsMaker.getListSubtasks());
+        System.out.println(listsMaker.getSubtasksOfEpic(3));
+        System.out.println(listsMaker.getSubtasksOfEpic(6));
 
         // Изменил статус задачи 1 на IN_PROGRESS и задачи 2 на DONE
-        taskManager.changeTaskStatus(1, 1);
-        taskManager.changeTaskStatus(2, 2);
-        listsMaker.getListTasks();
+        TaskManager.changeTaskStatus(1, 1);
+        TaskManager.changeTaskStatus(2, 2);
+        System.out.println(listsMaker.getListTasks());
 
         //Изменил статус поздадач эпика 3 на DONE
-        taskManager.changeSubtaskStatus(4, 2);
-        epicId = taskManager.getSubtasks().get(4).getEpicId();
-        epic = taskManager.getEpics().get(epicId);
+        TaskManager.changeSubtaskStatus(4, 2);
+        epicId = TaskManager.getSubtasks().get(4).getEpicId();
+        epic = TaskManager.getEpics().get(epicId);
         taskCreator.updateEpic(epic);
-        listsMaker.getSubtasksOfEpic(epicId);
+        System.out.println(listsMaker.getSubtasksOfEpic(epicId));
 
-        taskManager.changeSubtaskStatus(5, 2);
-        epicId = taskManager.getSubtasks().get(5).getEpicId();
-        epic = taskManager.getEpics().get(epicId);
+        TaskManager.changeSubtaskStatus(5, 2);
+        epicId = TaskManager.getSubtasks().get(5).getEpicId();
+        epic = TaskManager.getEpics().get(epicId);
         taskCreator.updateEpic(epic);
-        listsMaker.getSubtasksOfEpic(epicId);
+        System.out.println(listsMaker.getSubtasksOfEpic(epicId));
 
         //Изменил статус поздадач эпика 6 на IN_PROGRESS
-        taskManager.changeSubtaskStatus(7, 1);
-        epicId = taskManager.getSubtasks().get(7).getEpicId();
-        epic = taskManager.getEpics().get(epicId);
+        TaskManager.changeSubtaskStatus(7, 1);
+        epicId = TaskManager.getSubtasks().get(7).getEpicId();
+        epic = TaskManager.getEpics().get(epicId);
         taskCreator.updateEpic(epic);
-        listsMaker.getSubtasksOfEpic(epicId);
-        listsMaker.getEpic(epicId);
+        System.out.println(listsMaker.getSubtasksOfEpic(epicId));
+        System.out.println(listsMaker.getEpic(epicId));
 
         //Удаляю задачу 2
         taskRemover.removeTask(2);
         //Удаляю эпик 3
         taskRemover.removeEpic(3);
 
-        listsMaker.getListTasks();
-        listsMaker.getListEpics();
-        listsMaker.getListSubtasks();
-        listsMaker.getSubtasksOfEpic(3);
-        listsMaker.getSubtasksOfEpic(6);
-
+        System.out.println(listsMaker.getListTasks());
+        System.out.println(listsMaker.getListEpics());
+        System.out.println(listsMaker.getListSubtasks());
+        System.out.println(listsMaker.getSubtasksOfEpic(3));
+        System.out.println(listsMaker.getSubtasksOfEpic(6));
     }
 }

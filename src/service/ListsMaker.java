@@ -1,99 +1,87 @@
 package service;
 
-import model.*;
-
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+
+import static service.TaskManager.*;
 
 public class ListsMaker { // Класс для вывода задач по id и для вывода списков задач
-    private LinkedHashMap<Integer, Task> tasks;
-    private LinkedHashMap<Integer, Epic> epics;
-    private LinkedHashMap<Integer, Subtask> subtasks;
 
-    public ListsMaker(LinkedHashMap<Integer, Task> tasks,
-                      LinkedHashMap<Integer, Epic> epics,
-                      LinkedHashMap<Integer, Subtask> subtasks) {
-        this.tasks = tasks;
-        this.epics = epics;
-        this.subtasks = subtasks;
-    }
-
-    public void getTask(int id) { // 5 - Получить задачу по идентификатору
-        if (tasks.containsKey(id)) {
-            System.out.println(tasks.get(id).toString() + '\n');
+    public String getTask(int id) { // 5 - Получить задачу по идентификатору
+        if (getTasks().containsKey(id)) {
+            return getTasks().get(id).toString() + '\n';
         } else {
-            System.out.println("Задача numID-" + id + " не существует.\n");
+            return "Задача numID-" + id + " не существует.\n";
         }
     }
 
-    public void getEpic(int id) { // 5 - Получить эпик по идентификатору
-        if (epics.containsKey(id)) {
-            System.out.println(epics.get(id).toString() + '\n');
+    public String getEpic(int id) { // 5 - Получить эпик по идентификатору
+        if (getEpics().containsKey(id)) {
+            return getEpics().get(id).toString() + '\n';
         } else {
-            System.out.println("Эпик numID-" + id + " не существует.\n");
+            return "Эпик numID-" + id + " не существует.\n";
         }
     }
 
-    public void getSubtask(int id) { // 5 - Получить подзадачу по идентификатору
-        if (subtasks.containsKey(id)) {
-            System.out.println(subtasks.get(id).toString() + '\n');
+    public String getSubtask(int id) { // 5 - Получить подзадачу по идентификатору
+        if (getSubtasks().containsKey(id)) {
+            return getSubtasks().get(id).toString() + '\n';
         } else {
-            System.out.println("Подзадача numID-" + id + " не существует.\n");
+            return "Подзадача numID-" + id + " не существует.\n";
         }
     }
 
-    public void getListTasks() { // 6-Получить список всех задач
-        if (tasks.isEmpty()) {
-            System.out.println("Ни одна задача пока не создана.\n");
+    public String getListTasks() { // 6-Получить список всех задач
+        if (getTasks().isEmpty()) {
+            return "Ни одна задача пока не создана.\n";
         } else {
-            System.out.println("Список задач:");
-            for (Integer id : tasks.keySet()) {
-                System.out.println("  " + tasks.get(id).toString());
+            String list = "Список задач:\n";
+            for (Integer id : getTasks().keySet()) {
+                  list += "  " + getTasks().get(id).toString() +'\n';
             }
-            System.out.print('\n'); //Создаем отступ в выводе
+            return list;
         }
     }
 
-    public void getListEpics() { // 6 - Получить список всех эпиков
-        if (epics.isEmpty()) {
-            System.out.println("Ни один эпик пока не создан.\n");
+    public String getListEpics() { // 6 - Получить список всех эпиков
+        if (getEpics().isEmpty()) {
+            return "Ни один эпик пока не создан.\n";
         } else {
-            System.out.println("Список эпиков:");
-            for (Integer id : epics.keySet()) {
-                System.out.println("  " + epics.get(id).toString());
+            String list = "Список эпиков:\n";
+            for (Integer id : getEpics().keySet()) {
+                list += "  " + getEpics().get(id).toString() +'\n';
             }
-            System.out.print('\n');
+            return list;
         }
     }
 
-    public void getListSubtasks() { // 6 - Получить список всех подзадач
-        if (subtasks.isEmpty()) {
-            System.out.println("Ни одна подзадача пока не создана.\n");
+    public String getListSubtasks() { // 6 - Получить список всех подзадач
+        if (getSubtasks().isEmpty()) {
+            return "Ни одна подзадача пока не создана.\n";
         } else {
-            System.out.println("Список подзадач:");
-            for (Integer id : subtasks.keySet()) {
-                System.out.println("  " + subtasks.get(id).toString());
+            String list = "Список подзадач:\n";
+            for (Integer id : getSubtasks().keySet()) {
+                list += "  " + getSubtasks().get(id).toString() +'\n';
             }
-            System.out.print('\n');
+            return list;
         }
     }
 
-    public void getSubtasksOfEpic(int id) { // 7 - Получить список подзадач выбранного эпика
-        if (epics.containsKey(id)) { // Проверяем наличие эпика с переданным id
-            boolean condition = epics.get(id).getSubtasksInEpic().isEmpty();
+    public String getSubtasksOfEpic(int id) { // 7 - Получить список подзадач выбранного эпика
+        if (getEpics().containsKey(id)) { // Проверяем наличие эпика с переданным id
+            boolean condition = getEpics().get(id).getSubtasksInEpic().isEmpty();
             if (!condition) { // Проверяяем наличие подзадач у эпика
                 // Получаем список id подзадач-наследников из поля класса Epic
-                ArrayList<Integer> subtaskOfEpic = epics.get(id).getSubtasksInEpic();
-                System.out.println("Подзадачи эпика numID-" + id + ':');
+                ArrayList<Integer> subtaskOfEpic = getEpics().get(id).getSubtasksInEpic();
+                String list = "Подзадачи эпика numID-" + id + ":\n";
                 for (Integer subtaskId : subtaskOfEpic) { // Печатаем список задач выбранного эпика
-                    System.out.println("  " + subtasks.get(subtaskId).toString());
+                    list += "  " + getSubtasks().get(subtaskId).toString() +'\n';
                 }
-                System.out.print('\n');
+                return list;
             } else {
-                System.out.println("У эпика numID-" + id + " подзадачи отсутствуют.\n");
+                return "У эпика numID-" + id + " подзадачи отсутствуют.\n";
             }
         } else {
-            System.out.println("Эпик numID-" + id + " не существует.\n");
+            return "Эпик numID-" + id + " не существует.\n";
         }
     }
 }

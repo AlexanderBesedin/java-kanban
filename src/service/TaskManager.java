@@ -1,48 +1,34 @@
 package service;
 
-import model.Epic;
-import model.Subtask;
-import model.Task;
+import model.*;
 
 import java.util.LinkedHashMap;
 
 public class TaskManager { // Класс хранения задач всех типов
-    private String[] status;
-    private LinkedHashMap<Integer, Task> tasks;
-    private LinkedHashMap<Integer, Epic> epics;
-    private LinkedHashMap<Integer, Subtask> subtasks;
+    private static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
+    private static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
+    private static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
 
-    public TaskManager() {
-        status = new String[]{"NEW", "IN_PROGRESS", "DONE"};
-        tasks = new LinkedHashMap<>();
-        epics = new LinkedHashMap<>();
-        subtasks = new LinkedHashMap<>();
-    }
 
-    public void changeTaskStatus(int id, int num) {
-        String status = this.status[num];
+    public static void changeTaskStatus(int id, int num) {
+        String status = Status.getStatus(num);
         tasks.get(id).setStatus(status);
     }
 
-    public void changeSubtaskStatus(int id, int num) {
-        String status = this.status[num];
+    public static void changeSubtaskStatus(int id, int num) {
+        String status = Status.getStatus(num);
         subtasks.get(id).setStatus(status);
-
     }
 
-    public String[] getStatus() {
-        return status;
-    }
-
-    public LinkedHashMap<Integer, Task> getTasks() {
+    public static LinkedHashMap<Integer, Task> getTasks() {
         return tasks;
     }
 
-    public LinkedHashMap<Integer, Epic> getEpics() {
+    public static LinkedHashMap<Integer, Epic> getEpics() {
         return epics;
     }
 
-    public LinkedHashMap<Integer, Subtask> getSubtasks() {
+    public static LinkedHashMap<Integer, Subtask> getSubtasks() {
         return subtasks;
     }
 }

@@ -27,9 +27,4 @@ public class Subtask extends Task { //Класс для создания объ�
     public int hashCode() {
         return Objects.hash(super.hashCode(), epicId);
     }
-
-    @Override
-    public String toString() {
-        return "Subtask" + super.toString().substring(4);
-    }
 }
