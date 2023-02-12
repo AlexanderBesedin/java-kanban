@@ -33,12 +33,13 @@ public class TaskRemover { // Класс для удаления задач по
         }
     }
 
-    public void removeSubtask(int id) { // Удалить подзадачу по идентификатору
+    public void removeSubtask(Integer id) { // Удалить подзадачу по идентификатору
         if (getSubtasks().containsKey(id)) {
             int epicId = getSubtasks().get(id).getEpicId();
             Epic epic = getEpics().get(epicId); // Получаем родительский эпик
-            epic.removeSubtaskInEpic(id); // Удаляем из списка родительского эпика id подзадачи
-            TaskCreator.changeStatusEpic(epic); // Обновляем статус эпика
+            epic.getSubtasksInEpic().remove(id); // Удаляем из списка родительского эпика id подзадачи
+            updateEpicStatus(epic); // Обновляем статус эпика
+            //При выводе sout также удаляется subtask
             System.out.println("Подзадача " + getSubtasks().remove(id) + '\n' +
                     " УДАЛЕНА.\n");
         } else {
@@ -72,7 +73,8 @@ public class TaskRemover { // Класс для удаления задач по
             getSubtasks().clear();
             for (Integer id : getEpics().keySet()) { // После удаления всех подзадач возвращаем статус "NEW" каждому эпику
                 Epic epic = getEpics().get(id);
-                epic.setStatus(Status.getStatus(0));
+                epic.getSubtasksInEpic().clear(); // Удалил подзадачи в списке эпика
+                epic.setStatus(Status.NEW);
             }
             System.out.println("Подзадачи во всех эпиках удалены.\n");
         }

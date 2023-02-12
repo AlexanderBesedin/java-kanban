@@ -1,12 +1,14 @@
 package model;
 
+import service.Status;
+
 import java.util.Objects;
 
 public class Task { //Класс для создания объектов задач типа Task
     protected int id; //Идентификатор задачи
     protected String name; // Наименование задачи
     protected String description; // Описание задачи
-    protected String status; // Статус задачи
+    protected Status status; // Статус задачи
 
     public Task(String name, String description) {
         this.name = name;
@@ -38,11 +40,11 @@ public class Task { //Класс для создания объектов зад
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

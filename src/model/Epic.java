@@ -19,10 +19,6 @@ public class Epic extends Task { //Класс для создания объек
         return subtasksInEpic;
     }
 
-    public void removeSubtaskInEpic(Integer num) { // Метод удаления объекта из поля subtasksInEpic
-        subtasksInEpic.remove(num);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
