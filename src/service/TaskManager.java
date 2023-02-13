@@ -1,103 +1,51 @@
 package service;
 
-import model.*;
+import model.Epic;
+import model.Subtask;
+import model.Task;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
-public class TaskManager { // Класс хранения задач всех типов
-    private static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
-    private static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
-    private static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
+public interface TaskManager {
 
-    public static LinkedHashMap<Integer, Task> getTasks() {
-        return tasks;
-    }
+    Task getTask(int id); // Получить задачу по идентификатору
 
-    public static LinkedHashMap<Integer, Epic> getEpics() {
-        return epics;
-    }
+    Epic getEpic(int id); // Получить эпик по идентификатору
 
-    public static LinkedHashMap<Integer, Subtask> getSubtasks() {
-        return subtasks;
-    }
-    //Посчитал логичным перенести геттеры из ListMaker
-    public static Task getTask(int id) { // Получить задачу по идентификатору
-        return tasks.getOrDefault(id, null);
-    }
+    Subtask getSubtask(int id); // Получить подзадачу по идентификатору
 
-    public static Epic getEpic(int id) { // Получить эпик по идентификатору
-        return epics.getOrDefault(id, null);
-    }
+    ArrayList<Subtask> getSubtasksOfEpic(int id);
 
-    public static Subtask getSubtask(int id) { // Получить подзадачу по идентификатору
-        return subtasks.getOrDefault(id, null);
-    }
+    ArrayList<Task> getListTasks(); // Получить список всех задач
 
-    public static ArrayList<Subtask> getSubtasksOfEpic(int id) { // Получить список подзадач выбранного эпика
-        if (epics.containsKey(id)) {
-            ArrayList<Integer> numSubtasks = getEpic(id).getSubtasksInEpic();
-            ArrayList<Subtask> list = new ArrayList<>();
-            for (Integer subtaskId : numSubtasks) { // Проходим по списку id задач выбранного эпика
-                list.add(subtasks.get(subtaskId));
-            }
-            return list;
-        } else {
-            return null;
-        }
-    }
+    ArrayList<Epic> getListEpics(); // Получить список всех эпиков
 
-    public static ArrayList<Task> getListTasks() { // Получить список всех задач
-        ArrayList<Task> list = new ArrayList<>(tasks.values());
-        return list;
-    }
+    ArrayList<Subtask> getListSubtasks(); // Получить список всех подзадач
 
-    public static ArrayList<Epic> getListEpics() { // Получить список всех эпиков
-        ArrayList<Epic> list = new ArrayList<>(epics.values());
-        return list;
-    }
+    void createTask(Task task); // Метод создания задачи, эпика, подзадачи
 
-    public static ArrayList<Subtask> getListSubtasks() { // Получить список всех подзадач
-        ArrayList<Subtask> list = new ArrayList<>(subtasks.values());
-        return list;
-    }
+    void updateTask(Task task); //Метод обновления задачи
 
-    public static void changeTaskStatus(int id, Status status) {
-        tasks.get(id).setStatus(status);
-    }
+    void updateEpic(Epic epic); //Метод обновления эпика
 
-    public static void changeSubtaskStatus(int id, Status status) {
-        subtasks.get(id).setStatus(status);
-        int epicId = subtasks.get(id).getEpicId();
-        updateEpicStatus(epics.get(epicId)); // Обновил статус родительского эпика
-    }
+    void updateSubtask(Subtask subtask); //Метод обновления подзадачи
 
-// Перенес сюда updateEpicStatus()
-    public static void updateEpicStatus(Epic epic) { // Метод обновления статуса эпика по статусам включенных подзадач
-        if (epic.getSubtasksInEpic().isEmpty()) { // Проверяяем наличие подзадач у эпика
-            epic.setStatus(Status.NEW);
-            // Если эпик не имеет поздадач(пустой) - метод завершатется на данном месте, как условие блока if
-            // Если имеется ввиду иное конкретное улучшение - готов его реализовать при проверке проекта 4 спринта
-        } else {
-            // Получаем список id подзадач-наследников из поля класса Epic
-            ArrayList<Integer> subtaskOfEpic = epic.getSubtasksInEpic();
-            ArrayList<Status> statusSubtasks = new ArrayList<>(); //Список статусов подзадач эпика
-            for (Integer id : subtaskOfEpic) { // Проход циклом для заполнения списка со статусами подзадач
-                statusSubtasks.add(getSubtasks().get(id).getStatus());
-            }
-            // Условия для статуса эпика
-            boolean isNewStatus = !statusSubtasks.contains(Status.IN_PROGRESS)
-                    && !statusSubtasks.contains(Status.DONE);
-            boolean isDoneStatus = !statusSubtasks.contains(Status.NEW)
-                    && !statusSubtasks.contains(Status.IN_PROGRESS);
+    void changeTaskStatus(int id, Status status);
 
-            if (isNewStatus) {
-                epic.setStatus(Status.NEW);
-            } else if (isDoneStatus) {
-                epic.setStatus(Status.DONE);
-            } else {
-                epic.setStatus(Status.IN_PROGRESS);
-            }
-        }
-    }
+    void changeSubtaskStatus(int id, Status status);
+
+    void updateEpicStatus(Epic epic); // Метод обновления статуса эпика по статусам включенных подзадач
+
+    void removeTask(int id); // Удалить задачу по идентификатору
+
+    void removeEpic(int id); // Удалить эпик по идентификатору
+
+    void removeSubtask(Integer id); // Удалить подзадачу по идентификатору
+
+    void clearTasks(); // Удалить все задачи
+
+    void clearEpics(); // Удалить все эпики с подзадачами
+
+    void clearSubtasks(); //Удалить все подзадачи
+
 }
