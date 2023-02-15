@@ -4,33 +4,41 @@ import model.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 public class InMemoryTaskManager implements TaskManager { // Класс хранения задач всех типов
     private static int id;
     private static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
     private static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
     private static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
+    HistoryManager historyManager = Managers.getDefaultHistory();
 
     @Override
     public Task getTask(int id) { // Получить задачу по идентификатору
-        return tasks.getOrDefault(id, null);
+        Task task = tasks.getOrDefault(id, null);
+        historyManager.add(task);
+        return task;
     }
 
     @Override
     public Epic getEpic(int id) { // Получить эпик по идентификатору
-        return epics.getOrDefault(id, null);
+        Epic epic = epics.getOrDefault(id, null);
+        historyManager.add(epic);
+        return epic;
     }
 
     @Override
     public Subtask getSubtask(int id) { // Получить подзадачу по идентификатору
-        return subtasks.getOrDefault(id, null);
+        Subtask subtask = subtasks.getOrDefault(id, null);
+        historyManager.add(subtask);
+        return subtask;
     }
 
     @Override
-    public ArrayList<Subtask> getSubtasksOfEpic(int id) { // Получить список подзадач выбранного эпика
+    public List<Subtask> getSubtasksOfEpic(int id) { // Получить список подзадач выбранного эпика
         if (epics.containsKey(id)) {
-            ArrayList<Integer> numSubtasks = getEpic(id).getSubtasksInEpic();
-            ArrayList<Subtask> list = new ArrayList<>();
+            List<Integer> numSubtasks = epics.get(id).getSubtasksInEpic();
+            List<Subtask> list = new ArrayList<>();
             for (Integer subtaskId : numSubtasks) { // Проходим по списку id задач выбранного эпика
                 list.add(subtasks.get(subtaskId));
             }
@@ -41,24 +49,20 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     }
 
     @Override
-    public ArrayList<Task> getListTasks() { // Получить список всех задач
-        ArrayList<Task> list = new ArrayList<>(tasks.values());
-        return list;
+    public List<Task> getListTasks() { // Получить список всех задач
+        return new ArrayList<>(tasks.values());
     }
 
     @Override
-    public ArrayList<Epic> getListEpics() { // Получить список всех эпиков
-        ArrayList<Epic> list = new ArrayList<>(epics.values());
-        return list;
+    public List<Epic> getListEpics() { // Получить список всех эпиков
+        return new ArrayList<>(epics.values());
     }
 
     @Override
-    public ArrayList<Subtask> getListSubtasks() { // Получить список всех подзадач
-        ArrayList<Subtask> list = new ArrayList<>(subtasks.values());
-        return list;
+    public List<Subtask> getListSubtasks() { // Получить список всех подзадач
+        return new ArrayList<>(subtasks.values());
     }
 
-    // методы TaskCreator
     @Override
     public void createTask(Task task) { // Метод создания задачи, эпика, подзадачи
         if (task instanceof Subtask) { // Проверка объекта-аргумента на принаджежность классу Subtask
@@ -89,27 +93,27 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     }
 
     @Override
-    public void updateTask(Task task) { //Метод обновления задачи
-        tasks.put(task.getId(), task);
-        System.out.println("Обновлена задача: \n" + task + "\n" +
-                "Текущий статус: " + task.getStatus() + '\n');
-    }
-
-    @Override
-    public void updateEpic(Epic epic) { //Метод обновления эпика
-        updateEpicStatus(epic);
-        epics.put(epic.getId(), epic);
-        System.out.println("Обновлен эпик: \n" + epic + "\n" +
-                "Текущий статус: " + epic.getStatus() + '\n');
-    }
-
-    @Override
-    public void updateSubtask(Subtask subtask) { //Метод обновления подзадачи
-        subtasks.put(subtask.getId(), subtask);
-        Epic epic = epics.get(subtask.getEpicId());
-        updateEpicStatus(epic); // Обновляем статус родительского эпика
-        System.out.println("Обновлена подзадача: \n" + subtask + "\n" +
-                "Текущий статус: " + subtask.getStatus() + '\n');
+    public void updateTask(Task task) { //Метод обновления задачи, подзадачи, эпике
+        if (task instanceof Subtask) {
+            Subtask subtask = (Subtask) task;
+            subtasks.put(subtask.getId(), subtask);
+            Epic epic = epics.get(subtask.getEpicId());
+            updateEpicStatus(epic); // Обновляем статус родительского эпика
+            System.out.println("Обновлена подзадача: \n" + subtask + "\n" +
+                    "Текущий статус: " + subtask.getStatus() + '\n');
+        } else if (task instanceof Epic) {
+            Epic epic = (Epic) task;
+            updateEpicStatus(epic);
+            epics.put(epic.getId(), epic);
+            System.out.println("Обновлен эпик: \n" + epic + "\n" +
+                    "Текущий статус: " + epic.getStatus() + '\n');
+        } else if (Task.class != task.getClass()) {
+            System.out.println("Обновляемая задача должна иметь тип Task, Epic или Subtask.\n");
+        } else {
+            tasks.put(task.getId(), task);
+            System.out.println("Обновлена задача: \n" + task + "\n" +
+                    "Текущий статус: " + task.getStatus() + '\n');
+        }
     }
 
     @Override
@@ -124,17 +128,15 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         updateEpicStatus(epics.get(epicId)); // Обновил статус родительского эпика
     }
 
-// Перенес сюда updateEpicStatus()
-    @Override
+// Так как updateEpicStatus() работает с данными внутри класса - объявляю и реализую его только в самом классе
     public void updateEpicStatus(Epic epic) { // Метод обновления статуса эпика по статусам включенных подзадач
         if (epic.getSubtasksInEpic().isEmpty()) { // Проверяяем наличие подзадач у эпика
             epic.setStatus(Status.NEW);
-            // Если эпик не имеет поздадач(пустой) - метод завершатется на данном месте, как условие блока if
-            // Если имеется ввиду иное конкретное улучшение - готов его реализовать при проверке проекта 4 спринта
+            return; //Прервал выполнение метода
         } else {
             // Получаем список id подзадач-наследников из поля класса Epic
-            ArrayList<Integer> subtaskOfEpic = epic.getSubtasksInEpic();
-            ArrayList<Status> statusSubtasks = new ArrayList<>(); //Список статусов подзадач эпика
+            List<Integer> subtaskOfEpic = epic.getSubtasksInEpic();
+            List<Status> statusSubtasks = new ArrayList<>(); //Список статусов подзадач эпика
             for (Integer id : subtaskOfEpic) { // Проход циклом для заполнения списка со статусами подзадач
                 statusSubtasks.add(subtasks.get(id).getStatus());
             }
@@ -154,7 +156,6 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         }
     }
 
-    // методы TaskRemover
     @Override
     public void removeTask(int id) { // Удалить задачу по идентификатору
         if (tasks.containsKey(id)) { // Проверяем наличие искомой задачи в хэшмапе tasks по ключу
@@ -170,7 +171,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         if (epics.containsKey(id)) { // Проверяем наличие эпика с введенным идентификатором
             boolean condition = epics.get(id).getSubtasksInEpic().isEmpty(); //Условие проверки наличия задач в эпике
             if (!condition) {
-                ArrayList<Integer> subtaskOfEpic = epics.get(id).getSubtasksInEpic();
+                List<Integer> subtaskOfEpic = epics.get(id).getSubtasksInEpic();
                 for (Integer subtaskId : subtaskOfEpic) { // Удаляем подзадачи выбранного эпика
                     subtasks.remove(subtaskId);
                 }
@@ -227,12 +228,13 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             for (Integer id : epics.keySet()) { // После удаления всех подзадач возвращаем статус "NEW" каждому эпику
                 Epic epic = epics.get(id);
                 epic.getSubtasksInEpic().clear(); // Удалил подзадачи в списке эпика
-                epic.setStatus(Status.NEW);
+                updateEpicStatus(epic); //Исправил изменение статуса через метод
             }
             System.out.println("Подзадачи во всех эпиках удалены.\n");
         }
     }
 
+    @Override
     public void printTask(int id) { // Метод вывода задачи любого типа по существующему id
         if (tasks.containsKey(id)) { // Проверка наличия id у мапы tasks
             System.out.println("Задача numID-" + id + ":\n" + getTask(id) + '\n');
@@ -245,9 +247,10 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         }
     }
 
-    public void printSubtaskOfEpic(int id) { //Метод печати позадач выбранного эпика
+    @Override
+    public void printSubtasksOfEpic(int id) { //Метод печати позадач выбранного эпика
         if (epics.containsKey(id)) {
-            if (!getEpic(id).getSubtasksInEpic().isEmpty()) {
+            if (!epics.get(id).getSubtasksInEpic().isEmpty()) {
                 String list = "Список подзадач эпика numID-" + id + ":\n";
                 for (Subtask subtask : getSubtasksOfEpic(id)) {
                     list += "  " + subtask + '\n';
@@ -259,9 +262,9 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         } else {
             System.out.println("Эпик numID-" + id + " не существует.\n");
         }
-        ;
     }
 
+    @Override
     public void printListTasks() { // Метод печати списка задач
         if (tasks.isEmpty()) {
             System.out.println("Ни одна задача пока не создана.\n");
@@ -274,6 +277,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         }
     }
 
+    @Override
     public void printListEpics() { // Метод печати списка эпиков
         if (epics.isEmpty()) {
             System.out.println("Ни один эпик пока не создан.\n");
@@ -286,6 +290,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         }
     }
 
+    @Override
     public void printListSubtasks() { // Метод печати списка подзадач
         if (subtasks.isEmpty()) {
             System.out.println("Ни одна подзадача пока не создана.\n");

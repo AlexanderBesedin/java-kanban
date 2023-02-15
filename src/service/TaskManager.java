@@ -4,7 +4,7 @@ import model.Epic;
 import model.Subtask;
 import model.Task;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public interface TaskManager {
 
@@ -14,27 +14,22 @@ public interface TaskManager {
 
     Subtask getSubtask(int id); // Получить подзадачу по идентификатору
 
-    ArrayList<Subtask> getSubtasksOfEpic(int id);
+    List<Subtask> getSubtasksOfEpic(int id);
 
-    ArrayList<Task> getListTasks(); // Получить список всех задач
+    List<Task> getListTasks(); // Получить список всех задач
 
-    ArrayList<Epic> getListEpics(); // Получить список всех эпиков
+    List<Epic> getListEpics(); // Получить список всех эпиков
 
-    ArrayList<Subtask> getListSubtasks(); // Получить список всех подзадач
+    List<Subtask> getListSubtasks(); // Получить список всех подзадач
 
     void createTask(Task task); // Метод создания задачи, эпика, подзадачи
 
-    void updateTask(Task task); //Метод обновления задачи
-
-    void updateEpic(Epic epic); //Метод обновления эпика
-
-    void updateSubtask(Subtask subtask); //Метод обновления подзадачи
+    void updateTask(Task task); //Метод обновления задачи, подзадачи, эпика
 
     void changeTaskStatus(int id, Status status);
 
     void changeSubtaskStatus(int id, Status status);
 
-    void updateEpicStatus(Epic epic); // Метод обновления статуса эпика по статусам включенных подзадач
 
     void removeTask(int id); // Удалить задачу по идентификатору
 
@@ -47,5 +42,15 @@ public interface TaskManager {
     void clearEpics(); // Удалить все эпики с подзадачами
 
     void clearSubtasks(); //Удалить все подзадачи
+
+    public void printTask(int id); // Метод вывода задачи любого типа по существующему id
+
+    public void printSubtasksOfEpic(int id); //Метод печати позадач выбранного эпика
+
+    public void printListTasks(); // Метод печати списка задач
+
+    public void printListEpics(); // Метод печати списка эпиков
+
+    public void printListSubtasks(); // Метод печати списка подзадач
 
 }

@@ -1,10 +1,11 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Epic extends Task { //Класс для создания объектов задач типа Эпик
-    private ArrayList<Integer> subtasksInEpic; // Список id подзадач, которые относятся к объекту класса Epic
+    private List<Integer> subtasksInEpic; // Список id подзадач, которые относятся к объекту класса Epic
 
     public Epic(String name, String description) {
         super(name, description);
@@ -15,7 +16,7 @@ public class Epic extends Task { //Класс для создания объек
         subtasksInEpic.add(num);
     }
 
-    public ArrayList<Integer> getSubtasksInEpic() { //Геттер для поля subtasksInEpic
+    public List<Integer> getSubtasksInEpic() { //Геттер для поля subtasksInEpic
         return subtasksInEpic;
     }
 
