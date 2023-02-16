@@ -44,7 +44,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             }
             return list;
         } else {
-            return null;
+            return new ArrayList<>(); // Возвращаю пустой список, за вывод сообщения отвечает метод printSubtasksOfEpic
         }
     }
 
@@ -61,6 +61,11 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     @Override
     public List<Subtask> getListSubtasks() { // Получить список всех подзадач
         return new ArrayList<>(subtasks.values());
+    }
+
+    @Override
+    public List<Task> getHistory() {
+        return historyManager.getHistory();
     }
 
     @Override

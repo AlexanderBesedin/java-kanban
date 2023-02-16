@@ -22,6 +22,8 @@ public interface TaskManager {
 
     List<Subtask> getListSubtasks(); // Получить список всех подзадач
 
+    List<Task> getHistory();  // добавил метод получения истории просмотров задач
+
     void createTask(Task task); // Метод создания задачи, эпика, подзадачи
 
     void updateTask(Task task); //Метод обновления задачи, подзадачи, эпика
@@ -53,6 +55,6 @@ public interface TaskManager {
 
     public void printListSubtasks(); // Метод печати списка подзадач
 
-    void printHistory(); // добавил метод получения истории
+    void printHistory(); // добавил метод печати истории
 
 }
