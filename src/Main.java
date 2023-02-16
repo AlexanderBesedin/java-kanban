@@ -15,8 +15,6 @@ public class Main {
         Subtask subtask;
 
         TaskManager taskManager = Managers.getDefault();
-        HistoryManager historyManager = Managers.getDefaultHistory();
-
 
         //Создал Задачу1
         name = "Забрать загранпаспорт";
@@ -75,10 +73,10 @@ public class Main {
         taskManager.changeTaskStatus(2, Status.IN_PROGRESS);
         taskManager.printTask(1);
 
-        historyManager.printHistory(); //Печатаю историю просмотров. 1 просмотр
+        taskManager.printHistory(); //Печатаю историю просмотров. 1 просмотр
         taskManager.printTask(2);
 
-        historyManager.printHistory(); // Печатаю историю просмотров. 2 просмотра
+        taskManager.printHistory(); // Печатаю историю просмотров. 2 просмотра
 
         // Обновляем задачу 2
         task = taskManager.getTask(2);
@@ -95,26 +93,26 @@ public class Main {
         taskManager.changeSubtaskStatus(5, Status.DONE);
         taskManager.printSubtasksOfEpic(epicId);
         taskManager.printTask(epicId); // Вызов эпика №3
-        historyManager.printHistory(); //Печатаю историю просмотров. 6 просмотров
+        taskManager.printHistory(); //Печатаю историю просмотров. 6 просмотров
 
         taskManager.changeSubtaskStatus(7, Status.IN_PROGRESS);
         epicId = taskManager.getSubtask(7).getEpicId(); // вызов сабтаски №7 для получения родительского epicId
         taskManager.printSubtasksOfEpic(epicId);
         taskManager.printTask(epicId); //Вызов эпика №6
-        historyManager.printHistory(); //Печатаю историю просмотров. 8 просмотров
+        taskManager.printHistory(); //Печатаю историю просмотров. 8 просмотров
 
         taskManager.printTask(1); //Вызов задачи 1
         taskManager.printTask(4); //Вызов подзадачи 4
-        historyManager.printHistory(); //Печатаю историю просмотров. 10 просмотров
+        taskManager.printHistory(); //Печатаю историю просмотров. 10 просмотров
         taskManager.printTask(5); // Вызов подзадачи 5
-        historyManager.printHistory(); //Печатаю историю просмотров. 11ый просмотр, самый первый просмотр удален из истории
+        taskManager.printHistory(); //Печатаю историю просмотров. 11ый просмотр, самый первый просмотр удален из истории
         taskManager.printTask(7); //
 
         subtask = taskManager.getSubtask(7);
         subtask.setName("Сдать проект 4 спринта.");
         subtask.setDescription("Завершить и сдать 4 спринтов курса по Java.");
         taskManager.updateTask(subtask);
-        historyManager.printHistory();
+        taskManager.printHistory();
 
         //Удаляю задачу 2
         taskManager.removeTask(2);
@@ -129,6 +127,6 @@ public class Main {
 
         taskManager.clearSubtasks();
         taskManager.printListSubtasks();
-        historyManager.printHistory();
+        taskManager.printHistory();
     }
 }

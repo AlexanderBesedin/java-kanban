@@ -10,12 +10,10 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     @Override
     public void add(Task task) { // Метод заполнения истории просмотров, где новый просмотр добавляется в КОНЕЦ списка
-        if (history.size() < 10) { // проверяем список на заполненность до 10 значений
-            history.add(task);
-        } else { // удаляем самый старый просмотр и добавляем новый в начало списка
-            history.remove(0);
-            history.add(task);
+        if (history.size() > 10) { // проверяем список на заполненность до 10 значений
+            history.remove(0);  // удаляем самый старый просмотр и добавляем новый в начало списка
         }
+        history.add(task);
     }
 
     @Override

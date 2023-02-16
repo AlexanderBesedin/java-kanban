@@ -103,7 +103,6 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
                     "Текущий статус: " + subtask.getStatus() + '\n');
         } else if (task instanceof Epic) {
             Epic epic = (Epic) task;
-            updateEpicStatus(epic);
             epics.put(epic.getId(), epic);
             System.out.println("Обновлен эпик: \n" + epic + "\n" +
                     "Текущий статус: " + epic.getStatus() + '\n');
@@ -301,5 +300,10 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             }
             System.out.println(list);
         }
+    }
+
+    @Override
+    public void printHistory() {
+        historyManager.printHistory();
     }
 }

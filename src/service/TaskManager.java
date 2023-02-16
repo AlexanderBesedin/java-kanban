@@ -53,4 +53,6 @@ public interface TaskManager {
 
     public void printListSubtasks(); // Метод печати списка подзадач
 
+    void printHistory(); // добавил метод получения истории
+
 }
