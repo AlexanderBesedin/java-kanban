@@ -45,15 +45,15 @@ public interface TaskManager {
 
     void clearSubtasks(); //Удалить все подзадачи
 
-    public void printTask(int id); // Метод вывода задачи любого типа по существующему id
+    void printTask(int id); // Метод вывода задачи любого типа по существующему id
 
-    public void printSubtasksOfEpic(int id); //Метод печати позадач выбранного эпика
+    void printSubtasksOfEpic(int id); //Метод печати позадач выбранного эпика
 
-    public void printListTasks(); // Метод печати списка задач
+    void printListTasks(); // Метод печати списка задач
 
-    public void printListEpics(); // Метод печати списка эпиков
+    void printListEpics(); // Метод печати списка эпиков
 
-    public void printListSubtasks(); // Метод печати списка подзадач
+    void printListSubtasks(); // Метод печати списка подзадач
 
     void printHistory(); // добавил метод печати истории
 

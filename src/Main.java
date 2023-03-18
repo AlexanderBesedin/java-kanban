@@ -4,7 +4,6 @@ import model.Task;
 import service.*;
 
 public class Main {
-
     public static void main(String[] args) {
         String name;
         String description;
@@ -16,117 +15,143 @@ public class Main {
 
         TaskManager taskManager = Managers.getDefault();
 
-        //Создал Задачу1
-        name = "Забрать загранпаспорт";
-        description = "Нужно забрать загранпаспорт в отделении миграции МВД №5.";
-        task = new Task(name, description);
-        taskManager.createTask(task);
-
-        //Создал Задачу2
+        //Создал Задачу #1
         name = "Купить корм кошке";
         description = "Купить корм Brit Premium в магзине 4 лапы в Ленте.";
         task = new Task(name, description);
         taskManager.createTask(task);
 
-        //Создал Эпик с двумя Подзадачами
-        // Создал эпик
+        //Создал Задачу #2
+        name = "Забрать загранпаспорт";
+        description = "Нужно забрать загранпаспорт в отделении миграции МВД №5.";
+        task = new Task(name, description);
+        taskManager.createTask(task);
+
+        // Создал эпик #3 с тремя подзадачами
         name = "Получить водительское удостоверение";
         description = "Получить ВУ категории А и В. Пройти обучение в автошколе Ягуар.";
         epic = new Epic(name, description);
         taskManager.createTask(epic); //ID == 3
 
-        // Создал первую подзадачу
+        // Создал первую подзадачу #4
         name = "Пройти обучение в автошколе Ягуар";
         description = "Пройти обучение теории и практике вождения (50 часов). Сдать внутренние экзамены.";
         epicId = epic.getId(); //ID == 3
         subtask = new Subtask(name, description, epicId);
         taskManager.createTask(subtask);
 
-        // Создал вторую подзадачу
-        name = "Сдать экзамен в ГИБДД";
+        // Создал вторую подзадачу #5
+        name = "Сдать экзамен в ГИБДД на категорию В";
         description = "Сдать теорию вождения, автодром и вождение в городе на экзамене в ГИБДД на категорию В.";
         epicId = epic.getId();
         subtask = new Subtask(name, description, epicId);
         taskManager.createTask(subtask);
 
-        // Создал Эпик с одной Подзадачей
-        name = "Подготовиться к отпуску";
-        description = "Закрыть дела, задачи перед отпуском, купить билеты, заброниронировать отель.";
-        epic = new Epic(name, description);
-        taskManager.createTask(epic); //ID == 6
-        // Создал подзадачу эпика
-        name = "Сдать проекты по учебе";
-        description = "Выполнить и сдать проекты 3 и 4 спринтов курса по Java.";
+        // Создал третью подзадачу #6
+        name = "Сдать экзамен в ГИБДД на категорию А";
+        description = "Сдать практический экзамен на площадке в ГИБДД на категорию А.";
         epicId = epic.getId();
         subtask = new Subtask(name, description, epicId);
         taskManager.createTask(subtask);
 
-        // Печать списков созданных задач, эпиков, подзадач
-        taskManager.printListTasks();
-        taskManager.printListEpics();
-        taskManager.printListSubtasks();
-        taskManager.printSubtasksOfEpic(3);
-        taskManager.printSubtasksOfEpic(6);
+        // Создал Эпик без Подзадач #7
+        name = "Подготовиться к отпуску";
+        description = "Закрыть дела, задачи перед отпуском, купить билеты, заброниронировать отель.";
+        epic = new Epic(name, description);
+        taskManager.createTask(epic);
 
-        // Изменил статус задачи 1 на IN_PROGRESS и задачи 2 на DONE
-        taskManager.changeTaskStatus(1, Status.IN_PROGRESS);
-        taskManager.changeTaskStatus(2, Status.IN_PROGRESS);
-        taskManager.printTask(1);
 
+        taskManager.getTask(1); // первый посмотр
         taskManager.printHistory(); //Печатаю историю просмотров. 1 просмотр
-        taskManager.printTask(2);
-
+        /* Должно быть:
+        * Task 1
+        */
+        taskManager.getTask(2); // второй просмотр
         taskManager.printHistory(); // Печатаю историю просмотров. 2 просмотра
+        /* Должно быть:
+         * Task 1
+         * Task 2
+         */
 
-        // Обновляем задачу 2
-        task = taskManager.getTask(2);
+        // Обновляем задачу 1
+        task = taskManager.getTask(1); // 3 просмотр
         task.setName("Зайти в магазин 4 лапы");
         task.setDescription("Купить кошке корм Brit Premium и наполнитель.");
         taskManager.updateTask(task);
 
+        // Изменил статус задачи 1 на DONE и задачи 2 на IN_PROGRESS
+        taskManager.changeTaskStatus(1, Status.DONE);
+        taskManager.changeTaskStatus(2, Status.IN_PROGRESS);
+        taskManager.printHistory(); // Проверка удаления старого  и записи нового просмотра задачи1. Всего 2 просмотра
+        /* Должно быть:
+         * Task 2
+         * Task 1
+         */
+
         //Изменил статус поздадач эпика 3 на DONE
         taskManager.changeSubtaskStatus(4, Status.DONE);
-        epicId = taskManager.getSubtask(4).getEpicId(); // вызов сабтаски №4 для получения родительского epicId
-        taskManager.printSubtasksOfEpic(epicId);
-        taskManager.printTask(epicId); // вызов эпика №3
+        epicId = taskManager.getSubtask(4).getEpicId(); // 4ое обращение к задачи через getSubtask. Всего 3 просмотра
+        //taskManager.printSubtasksOfEpic(epicId);
+        taskManager.getEpic(epicId); // 5ый просмотр (эпик#3), Всего 4 просмотра
+        taskManager.printHistory();
+        /* Должно быть:
+         * Task 2
+         * Task 1
+         * Subtask 4
+         * Epic 3
+         */
 
         taskManager.changeSubtaskStatus(5, Status.DONE);
-        taskManager.printSubtasksOfEpic(epicId);
-        taskManager.printTask(epicId); // Вызов эпика №3
+        //taskManager.printSubtasksOfEpic(epicId);
+        taskManager.getSubtask(5); // Вызов подзадачи №5
+        taskManager.getSubtask(4); // Вызов подзадачи №4
         taskManager.printHistory(); //Печатаю историю просмотров. 6 просмотров
+        /* Должно быть:
+         * Task 2
+         * Task 1
+         * Epic 3
+         * Subtask 5
+         * Subtask 4
+         */
 
-        taskManager.changeSubtaskStatus(7, Status.IN_PROGRESS);
-        epicId = taskManager.getSubtask(7).getEpicId(); // вызов сабтаски №7 для получения родительского epicId
-        taskManager.printSubtasksOfEpic(epicId);
-        taskManager.printTask(epicId); //Вызов эпика №6
-        taskManager.printHistory(); //Печатаю историю просмотров. 8 просмотров
+        taskManager.getEpic(3); // Вызов эпика №3
+        taskManager.changeSubtaskStatus(6, Status.DONE);
+        taskManager.printHistory(); //Печатаю историю просмотров. 6 просмотров
+        /* Должно быть:
+         * Task 2
+         * Task 1
+         * Subtask 5
+         * Subtask 4
+         * Epic 3
+         */
 
-        taskManager.printTask(1); //Вызов задачи 1
-        taskManager.printTask(4); //Вызов подзадачи 4
-        taskManager.printHistory(); //Печатаю историю просмотров. 10 просмотров
-        taskManager.printTask(5); // Вызов подзадачи 5
-        taskManager.printHistory(); //Печатаю историю просмотров. 11ый просмотр, самый первый просмотр удален из истории
-        taskManager.printTask(7); //
-
-        subtask = taskManager.getSubtask(7);
-        subtask.setName("Сдать проект 4 спринта.");
-        subtask.setDescription("Завершить и сдать 4 спринтов курса по Java.");
-        taskManager.updateTask(subtask);
-        taskManager.printHistory();
-
-        //Удаляю задачу 2
+        taskManager.getSubtask(6); //Вызов подзадачи 6
+        taskManager.getEpic(7); //Вызов эпика №7
+        taskManager.removeSubtask(4);
         taskManager.removeTask(2);
-        //Удаляю эпик 3
-        taskManager.removeEpic(3);
+        taskManager.printHistory(); //Печатаю историю просмотров. 8 просмотров
+        /* Должно быть:
+         * Task 1
+         * Subtask 5
+         * Epic 3
+         * Subtask 6
+         * Epic 7
+         */
 
-        taskManager.printListTasks();
-        taskManager.printListEpics();
-        taskManager.printListSubtasks();
-        taskManager.printSubtasksOfEpic(3); //Обращаемся к удаленному эпику
-        taskManager.printSubtasksOfEpic(6);
-
-        taskManager.clearSubtasks();
-        taskManager.printListSubtasks();
+        taskManager.removeEpic(3); // Удаляем эпик 3 с подзадачами 5 и 6
         taskManager.printHistory();
+        /* Должно быть:
+         * Task 1
+         * Epic 7
+         */
+
+        taskManager.clearTasks();
+        taskManager.clearEpics();
+        //taskManager.removeEpic(7);
+        taskManager.printHistory();
+        /* Должно быть:
+
+         */
+
     }
 }

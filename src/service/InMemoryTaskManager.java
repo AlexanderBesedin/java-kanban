@@ -163,6 +163,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     @Override
     public void removeTask(int id) { // Удалить задачу по идентификатору
         if (tasks.containsKey(id)) { // Проверяем наличие искомой задачи в хэшмапе tasks по ключу
+            historyManager.remove(id); // Удаляем из истории просмотров
             System.out.println("Задача " + tasks.remove(id) + '\n' +
                     "УДАЛЕНА.\n");
         } else {
@@ -177,9 +178,11 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             if (!condition) {
                 List<Integer> subtaskOfEpic = epics.get(id).getSubtasksInEpic();
                 for (Integer subtaskId : subtaskOfEpic) { // Удаляем подзадачи выбранного эпика
+                    historyManager.remove(subtaskId); // Удаляем подзадачи выбранного эпика из истории просмотров
                     subtasks.remove(subtaskId);
                 }
             }
+            historyManager.remove(id); // Удаляем эпик из истории просмотров
             System.out.println("Эпик " + epics.remove(id) + '\n' +
                     "УДАЛЕН.\n");
         } else {
@@ -194,7 +197,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             Epic epic = epics.get(epicId); // Получаем родительский эпик
             epic.getSubtasksInEpic().remove(id); // Удаляем из списка родительского эпика id подзадачи
             updateEpicStatus(epic); // Обновляем статус эпика
-            //При выводе sout также удаляется subtask
+            historyManager.remove(id); // Удаляем  подзадачу из истории просмотров
             System.out.println("Подзадача " + subtasks.remove(id) + '\n' +
                     " УДАЛЕНА.\n");
         } else {
@@ -207,6 +210,9 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         if (tasks.isEmpty()) {
             System.out.println("Ни одна задача пока не создана.\n");
         } else {
+            for (Integer id : tasks.keySet()) {
+                historyManager.remove(id); // Удаляем из списка просмотров все задачи task
+            }
             tasks.clear();
             System.out.println("Все задачи удалены.\n");
         }
@@ -217,6 +223,14 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         if (epics.isEmpty()) {
             System.out.println("Ни один эпик пока не создан.\n");
         } else {
+            for (Integer id : epics.keySet()) {
+                historyManager.remove(id); // Удаляем из списка просмотров все эпики epic
+            }
+
+            for (Integer id : subtasks.keySet()) {
+                historyManager.remove(id); // Удаляем из списка просмотров все подзадачи subtask
+            }
+
             epics.clear();
             subtasks.clear();
             System.out.println("Все эпики с подзадачами удалены.\n");
@@ -228,7 +242,11 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         if (subtasks.isEmpty()) {
             System.out.println("Ни одна подзадача пока не создана.\n");
         } else {
+            for (Integer id : subtasks.keySet()) {
+                historyManager.remove(id); // Удаляем из списка просмотров все подзадачи subtask
+            }
             subtasks.clear();
+
             for (Integer id : epics.keySet()) { // После удаления всех подзадач возвращаем статус "NEW" каждому эпику
                 Epic epic = epics.get(id);
                 epic.getSubtasksInEpic().clear(); // Удалил подзадачи в списке эпика
