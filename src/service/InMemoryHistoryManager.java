@@ -10,8 +10,6 @@ import java.util.Map;
 public class InMemoryHistoryManager implements HistoryManager {
     private Node<Task> first;
     private Node<Task> last;
-    private int size = 0; //Количество просмотров задач
-    private static List<Task> history = new ArrayList<>();
     private static Map<Integer, Node<Task>> historyMap = new HashMap<>();
 
     @Override
@@ -33,22 +31,19 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     @Override
     public List<Task> getHistory() {
-        history.clear(); // удаляем неактуальную историю просмотров
-        history = getTasks();
-        return history;
+        return getTasks();
     }
 
     @Override
     public void printHistory() {
-        List<Task> history = getHistory();
         System.out.println("История просмотров задач:");
-        for (Task task : history) {
+        for (Task task : getTasks()) {
             System.out.println("  " + task);
         }
         System.out.println('\n');
     }
 
-    void linkLast(Task task) {
+    private void linkLast(Task task) {
         final Node<Task> exLast = last;
         final Node<Task> newNode = new Node<>(task, null, exLast);
         last = newNode;
@@ -57,11 +52,10 @@ public class InMemoryHistoryManager implements HistoryManager {
         } else {
             exLast.next = newNode;
         }
-        size++; // Используется для исключения авторасширений списка ArrayList стандартной вместимости (size >> 10)
     }
 
     private List<Task> getTasks() {
-        List<Task> newHistory = new ArrayList<>(size); // создается список вместимостью равной size
+        List<Task> newHistory = new ArrayList<>();
 
         for (Node<Task> i = first; i != null; i = i.next) {
             newHistory.add(i.data);
@@ -74,14 +68,14 @@ public class InMemoryHistoryManager implements HistoryManager {
         Node<Task> beforeNode = node.prev;
         Node<Task> afterNode = node.next;
 
-        if (beforeNode != null && beforeNode.next == node) { // Проверка условия наличия предыдущего узла
-            if (node.next == null) { // проверяем условие, что node == last
+        if (beforeNode != null && beforeNode.next.equals(node)) { // Проверка условия наличия предыдущего узла
+            if (afterNode == null) { // проверяем условие, что node == last
                 last = beforeNode;
             }
-            beforeNode.next = node.next; // связываем предыдущий узел со следующим
+            beforeNode.next = afterNode; // связываем предыдущий узел со следующим
         }
-        if (afterNode != null && afterNode.prev == node) { // Проверка условия наличия следующего узла
-            if (node.prev == null) { // проверяем условие, что node == first
+        if (afterNode != null) { // Проверка условия наличия следующего узла
+            if (beforeNode == null) { // проверяем условие, что node == first
                 first = afterNode;
             }
             afterNode.prev = node.prev; // связываем следующий узел с предыдущим
@@ -89,17 +83,18 @@ public class InMemoryHistoryManager implements HistoryManager {
         if (node.prev == null && node.next == null) { // удаляем ссылки последнего узла
             first = null;
             last = null;
+            historyMap.clear(); // Очищаем всю коллекцию просмотров
         }
-        node = null; // удаляем старый узел-просмотр
-        size--;
+        historyMap.remove(node.data.getId()); // Удаляем из коллекции старый просмотр
+        node = null; // удаляем ссылку узла-просмотра для его дальнейшего удаления из памяти сборщиком мусора
     }
 
-    private static class Node<E> {
-        E data;
-        Node<E> next;
-        Node<E> prev;
+    private static class Node<Task> {
+        Task data;
+        Node<Task> next;
+        Node<Task> prev;
 
-        Node(E data, Node<E> next, Node<E> prev) {
+        Node(Task data, Node<Task> next, Node<Task> prev) {
             this.data = data;
             this.next = next;
             this.prev = prev;
