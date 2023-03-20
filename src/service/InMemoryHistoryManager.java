@@ -68,25 +68,19 @@ public class InMemoryHistoryManager implements HistoryManager {
         Node<Task> beforeNode = node.prev;
         Node<Task> afterNode = node.next;
 
-        if (beforeNode != null && beforeNode.next.equals(node)) { // Проверка условия наличия предыдущего узла
-            if (afterNode == null) { // проверяем условие, что node == last
-                last = beforeNode;
-            }
+        if (beforeNode != null) { // Проверка условия наличия предыдущего узла
             beforeNode.next = afterNode; // связываем предыдущий узел со следующим
+        } else { // проверяем условие, что node == first
+            first = afterNode;
         }
+
         if (afterNode != null) { // Проверка условия наличия следующего узла
-            if (beforeNode == null) { // проверяем условие, что node == first
-                first = afterNode;
-            }
             afterNode.prev = node.prev; // связываем следующий узел с предыдущим
+        } else { // проверяем условие, что node == last
+            last = beforeNode;
         }
-        if (node.prev == null && node.next == null) { // удаляем ссылки последнего узла
-            first = null;
-            last = null;
-            historyMap.clear(); // Очищаем всю коллекцию просмотров
-        }
+
         historyMap.remove(node.data.getId()); // Удаляем из коллекции старый просмотр
-        node = null; // удаляем ссылку узла-просмотра для его дальнейшего удаления из памяти сборщиком мусора
     }
 
     private static class Node<Task> {
