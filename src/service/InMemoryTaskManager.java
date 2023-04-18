@@ -8,10 +8,18 @@ import java.util.List;
 
 public class InMemoryTaskManager implements TaskManager { // Класс хранения задач всех типов
     private static int id;
-    private static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
-    private static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
-    private static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
-    HistoryManager historyManager = Managers.getDefaultHistory();
+    protected static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
+    protected static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
+    protected static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
+    static HistoryManager historyManager = Managers.getDefaultHistory();
+
+    protected int getLastId() {
+        return id;
+    }
+
+    protected static void setLastId(int id) {
+        InMemoryTaskManager.id = id;
+    }
 
     @Override
     public Task getTask(int id) { // Получить задачу по идентификатору
@@ -123,16 +131,18 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     @Override
     public void changeTaskStatus(int id, Status status) {
         tasks.get(id).setStatus(status);
+        historyManager.add(tasks.get(id));
     }
 
     @Override
     public void changeSubtaskStatus(int id, Status status) {
         subtasks.get(id).setStatus(status);
         int epicId = subtasks.get(id).getEpicId();
+        historyManager.add(subtasks.get(id));
         updateEpicStatus(epics.get(epicId)); // Обновил статус родительского эпика
     }
 
-// Так как updateEpicStatus() работает с данными внутри класса - объявляю и реализую его только в самом классе
+    // Так как updateEpicStatus() работает с данными внутри класса - объявляю и реализую его только в самом классе
     public void updateEpicStatus(Epic epic) { // Метод обновления статуса эпика по статусам включенных подзадач
         if (epic.getSubtasksInEpic().isEmpty()) { // Проверяяем наличие подзадач у эпика
             epic.setStatus(Status.NEW);
@@ -158,6 +168,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
                 epic.setStatus(Status.IN_PROGRESS);
             }
         }
+        historyManager.add(epic);
     }
 
     @Override

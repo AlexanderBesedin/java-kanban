@@ -66,18 +66,18 @@ public class Task { //Класс для создания объектов зад
 
     @Override
     public String toString() {
-        String result = getClass().getSimpleName() +
+        String result = getClass().getSimpleName().toUpperCase() +
                 '{' +
                 "numID-" + id +
                 ", name='" + name + '\'';
+
+        result += ", status='" + status + '\'' + '}';
 
         if (description == null) {
             result += ", description='null'";
         } else {
             result += ", description='" + description.substring(0, 12) + "... '";
         }
-
-        result += ", status='" + status + '\'' + '}';
         return result;
     }
 }
