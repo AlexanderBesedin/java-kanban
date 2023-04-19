@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.util.*;
 
 public class FileBackedTasksManager extends InMemoryTaskManager {
-    private File file;
+    private final File file;
 
     private final static String TITLE = "id|type|name|status|description|epic_or_subtasksID\n";
 
@@ -200,7 +200,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         return result;
     }
 
-    static String historyToString(HistoryManager manager) {
+    private static String historyToString(HistoryManager manager) {
         List <Task> history = manager.getHistory();
         StringBuilder result = new StringBuilder();
 
@@ -213,7 +213,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         return result.toString();
     }
 
-    static List<Integer> historyFromString(String value) {
+    private static List<Integer> historyFromString(String value) {
         List<Integer> history = new ArrayList<>();
         if (!value.isBlank()) {
             String[] views = value.split("\\|");
@@ -247,7 +247,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                     Epic epic = (Epic) task;
                     epics.put(epic.getId(), epic);
                     allTasks.put(epic.getId(), epic);
-                } else if (Task.class == task.getClass()) {
+                } else {
                     tasks.put(task.getId(), task);
                     allTasks.put(task.getId(), task);
                 }
@@ -266,12 +266,8 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                     historyManager.add(allTasks.getOrDefault(id, null));
                 }
             }
-
-            allTasks.clear(); // Удаляем внутреннюю мапу всех задач из файла
-        } catch (FileNotFoundException e) {
-            throw new ManagerSaveException("Не удалось найти файл по указанному пути", e);
         } catch (IOException e) {
-            throw new ManagerSaveException("Не удалось прочесть файл", e);
+            throw new ManagerSaveException("Не удалось найти или прочесть файл по указанному пути", e);
         }
         return newFBTaskManager;
     }
