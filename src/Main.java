@@ -7,9 +7,15 @@ import service.FileBackedTasksManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Main {
-    private static final String HOME = System.getProperty("user.home");
+    private static String homeDir = System.getProperty("user.home");
     public static void main(String[] args) throws IOException {
         String name;
         String description;
@@ -20,9 +26,10 @@ public class Main {
         Subtask subtask;
 
         String child = "dev" + "/java-kanban/resources/saved.csv";
-        File file = new File(HOME, child);
+        File file = new File(homeDir, child);
 
         TaskManager taskManager = Managers.getDefault();
+        //InMemoryTaskManager taskManager = (InMemoryTaskManager) Managers.getDefault();
         taskManager = Managers.getFBManager(file);
 
         // условие для тестирования: файл сущ-ет - читаем файл, файла нет - выполняем блок создания и просмотра задач.
@@ -34,10 +41,14 @@ public class Main {
             taskManager.printListSubtasks();
             taskManager.printHistory();
 
+            for (Task prioritizedTask : taskManager.getPrioritizedTasks()) {
+                System.out.println(prioritizedTask);
+            }
+
             Files.deleteIfExists(file.toPath());
         } else {
 
-            //Создал Задачу #1
+           //Создал Задачу #1
             name = "Купить корм кошке";
             description = "Купить корм Brit Premium в магзине 4 лапы в Ленте.";
             task = new Task(name, description);
@@ -66,15 +77,44 @@ public class Main {
             name = "Сдать экзамен в ГИБДД на категорию В";
             description = "Сдать теорию вождения, автодром и вождение в городе на экзамене в ГИБДД на категорию В.";
             epicId = epic.getId();
-            subtask = new Subtask(name, description, epicId);
+            LocalDateTime startTime = taskManager.getFormatStartTime("11.05.2023 13:30");
+            Duration duration = taskManager.getFormatDuration("120");
+            //subtask = new Subtask(name, description, epicId);
+            subtask = new Subtask(name, description, epicId, startTime, duration);
             taskManager.createTask(subtask);
+
+        /*while (startTime.isBefore(subtask.getEndTime())) {
+            startTime = startTime.plusMinutes(15);
+            System.out.print(startTime);
+            System.out.println(InMemoryTaskManager.timeOverlaps.get(startTime));
+        }*/
 
             // Создал третью подзадачу #6
             name = "Сдать экзамен в ГИБДД на категорию А";
             description = "Сдать практический экзамен на площадке в ГИБДД на категорию А.";
             epicId = epic.getId();
-            subtask = new Subtask(name, description, epicId);
+            startTime = taskManager.getFormatStartTime("11.05.2023 11:53");
+            //startTime = taskManager.getFormatStartTime("31.12.2023 23:53");
+            duration = taskManager.getFormatDuration("30");
+            //subtask = new Subtask(name, description, epicId);
+            subtask = new Subtask(name, description, epicId, startTime, duration);
             taskManager.createTask(subtask);
+
+//        System.out.println(epic.getStartTime());
+//        System.out.println(epic.getEndTime());
+//        System.out.println(epic.getDuration().toMinutes());
+
+            //System.out.println("Порядок приоритета задач:\n" + taskManager.getPrioritizedTasks());
+
+
+            Set<LocalDateTime> timeNodes = new TreeSet<>(Comparator.naturalOrder());
+            timeNodes.addAll(InMemoryTaskManager.timeOverlaps.keySet());
+            for (LocalDateTime timeNode : timeNodes) {
+                System.out.println(timeNode.format(InMemoryTaskManager.DATE_TIME_FORMATTER));
+            }
+
+        //System.out.println(timeNodes.size());
+        //System.out.println(LocalDateTime.of(LocalDate.now().getYear(),1,1,2,30).toLocalTime());
 
             // Создал Эпик без Подзадач #7
             name = "Подготовиться к отпуску";
@@ -145,6 +185,10 @@ public class Main {
             //  * Subtask 4
             //  * Subtask 6
             //  * Epic 3
+
+            for (Task prioritizedTask : taskManager.getPrioritizedTasks()) {
+                System.out.println(prioritizedTask);
+            }
 
     /*
             taskManager.getSubtask(6); //Вызов подзадачи 6

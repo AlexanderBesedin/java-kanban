@@ -1,18 +1,22 @@
 package service;
 
+import exception.*;
 import model.Epic;
 import model.Subtask;
 import model.Task;
 
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class FileBackedTasksManager extends InMemoryTaskManager {
     private final File file;
 
-    private final static String TITLE = "id|type|name|status|description|epic_or_subtasksID\n";
+    public final static String TITLE = "id|type|name|status|description|start_time|duration|epic_or_subtasksID\n";
 
     public FileBackedTasksManager(File file) {
         this.file = file;
@@ -68,6 +72,11 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         super.updateEpicStatus(epic);
         save();
     }
+    @Override
+    public void updateEpicDuration(Epic epic) {
+        super.updateEpicDuration(epic);
+        save();
+    }
 
     @Override
     public void removeTask(int id) {
@@ -107,7 +116,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     private void save() {
         try {
-            Files.deleteIfExists(file.toPath()); // При очереном вызове метода save() удаляем файл для перезаписи
+            Files.deleteIfExists(file.toPath()); // При очередном вызове метода save() удаляем файл для перезаписи
             Files.createFile(file.toPath());
         } catch (IOException e) {
             throw new ManagerSaveException("Возникла ошибка при создании файла", e);
@@ -154,9 +163,9 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                 epicOrSubtasksID = ids.toString();
             }
         }
-        //      id,type,name,status,description,epic_or_subtasksID
-        return String.format("%d|%S|%s|%s|%s|%s\n", task.getId(), typeTask, task.getName(), task.getStatus(),
-                task.getDescription(), epicOrSubtasksID);
+        //      id,type,name,status,description,start_time,duration,epic_or_subtasksID
+        return String.format("%d|%S|%s|%s|%s|%s|%s|%s\n", task.getId(), typeTask, task.getName(), task.getStatus(),
+                task.getDescription(), task.getStartTime(), task.getDuration(), epicOrSubtasksID);
     }
 
     private static Task fromString(String value) {
@@ -165,7 +174,9 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         // name - field[2],
         // status - field[3],
         // description - field[4],
-        // epic_or_subtasksID - field[5]
+        // start_time - field[5],
+        // duration - field[6],
+        // epic_or_subtasksID - field[7]
 
         Task result = null;
         if (!value.isBlank()) {
@@ -176,23 +187,35 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                     Task task = new Task(field[2], field[4]); // Создали задачу с полями в конструкторе
                     task.setId(Integer.parseInt(field[0])); // записали id
                     task.setStatus(Status.valueOf(field[3])); // записали статус
+                    LocalDateTime startTime = field[5].equals("null")  ? null : LocalDateTime.parse(field[5]);
+                    task.setStartTime(startTime);
+                    Duration duration = field[6].equals("null") ? null : Duration.parse(field[6]);
+                    task.setDuration(duration);
                     result = task;
                     break;
                 case EPIC:
                     Epic epic = new Epic(field[2], field[4]);
                     epic.setId(Integer.parseInt(field[0]));
                     epic.setStatus(Status.valueOf(field[3]));
-                    if (field.length > 5) { // Проверяем наличие подзадач у эпика
-                        for (int i = 5; i < field.length; i++) {
+                    startTime = field[5].equals("null") ? null : LocalDateTime.parse(field[5]);
+                    epic.setStartTime(startTime);
+                    duration = field[6].equals("null") ? null : Duration.parse(field[6]);
+                    epic.setDuration(duration);
+                    if (field.length > 7) { // Проверяем наличие подзадач у эпика
+                        for (int i = 7; i < field.length; i++) {
                             epic.setSubtaskInEpic(Integer.parseInt(field[i]));
                         }
                     }
                     result = epic;
                     break;
                 case SUBTASK:
-                    Subtask subtask = new Subtask(field[2], field[4], Integer.parseInt(field[5]));
+                    Subtask subtask = new Subtask(field[2], field[4], Integer.parseInt(field[7]));
                     subtask.setId(Integer.parseInt(field[0]));
                     subtask.setStatus(Status.valueOf(field[3]));
+                    startTime = field[5].equals("null") ? null : LocalDateTime.parse(field[5]);
+                    subtask.setStartTime(startTime);
+                    duration = field[6].equals("null") ? null : Duration.parse(field[6]);
+                    subtask.setDuration(duration);
                     result = subtask;
                     break;
             }

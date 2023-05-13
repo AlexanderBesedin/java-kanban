@@ -1,11 +1,12 @@
 package model;
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class Epic extends Task { //Класс для создания объектов задач типа Эпик
     private List<Integer> subtasksInEpic; // Список id подзадач, которые относятся к объекту класса Epic
+    private LocalDateTime endTime; // Расченое время завершения эпика
 
     public Epic(String name, String description) {
         super(name, description);
@@ -18,6 +19,15 @@ public class Epic extends Task { //Класс для создания объек
 
     public List<Integer> getSubtasksInEpic() { //Геттер для поля subtasksInEpic
         return subtasksInEpic;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    @Override
+    public LocalDateTime getEndTime() {
+        return endTime;
     }
 
     @Override

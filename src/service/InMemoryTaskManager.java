@@ -1,17 +1,47 @@
 package service;
 
+import exception.OverlapsTimeException;
 import model.*;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 
 public class InMemoryTaskManager implements TaskManager { // Класс хранения задач всех типов
+    public final static String PATTERN = "dd.MM.yyyy HH:mm";
+    public final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(PATTERN);
+    public final static int TIME_PERIOD = 15;
+    public final static LocalDateTime START_YEAR = LocalDateTime.of(LocalDate.now().getYear(),1,1,0,0);
+    public final static LocalDateTime END_YEAR = START_YEAR.plusYears(1);
+    public static Map<LocalDateTime, Boolean> timeOverlaps;
     private static int id;
-    protected static LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
-    protected static LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
-    protected static LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
+    protected static final LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
+    protected static final LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
+    protected static final LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
     static HistoryManager historyManager = Managers.getDefaultHistory();
+
+    public InMemoryTaskManager() {
+        timeOverlaps = new HashMap<>();
+        // задал стартовую дату года поланирования
+        LocalDateTime timeNode = START_YEAR;
+        timeOverlaps.put(timeNode, true);
+
+        while (timeNode.isBefore(END_YEAR)) {
+            timeNode = timeNode.plusMinutes(TIME_PERIOD);
+            if (timeNode.isEqual(END_YEAR)) continue;
+            timeOverlaps.put(timeNode, true); // Время свободно - true, занято - false
+        }
+    }
+
+    Comparator<Task> priorityByTimeCompare = (t1, t2) -> {
+        if (t1.getStartTime() == null) return 1;
+        if (t2.getStartTime() == null) return -1;
+        if (t1.getStartTime() == null && t1.getStartTime() == t2.getStartTime())  return t1.getId() - t2.getId();
+        return t1.getStartTime().compareTo(t2.getStartTime());
+    };
 
     protected int getLastId() {
         return id;
@@ -19,6 +49,62 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
 
     protected static void setLastId(int id) {
         InMemoryTaskManager.id = id;
+    }
+
+    public LocalDateTime getFormatStartTime(String start) {
+        try {
+            if (start == null) throw new NullPointerException("Дата и время не заданы.");
+            LocalDateTime startTime = LocalDateTime.parse(start, DATE_TIME_FORMATTER);
+            if (startTime.getMinute() % TIME_PERIOD != 0) { // Проверяем кратность минут задачи периоду менеджера
+                startTime = startTime.minusMinutes(startTime.getMinute()) //
+                        .plusMinutes(roundByTimePeriod(startTime.getMinute()));
+                System.out.printf("Время старта задачи округлено кратно интервалу планирования - %s минутам.%n" +
+                                "Время старта: %s.%n", TIME_PERIOD, startTime.format(DATE_TIME_FORMATTER));
+            }
+            return startTime;
+        } catch (DateTimeParseException e) {
+            System.out.printf("Недопустимый формат даты и времени: \"%s\", требуемый формат: \"%s\"%n",
+                    e.getParsedString(), PATTERN);
+            return null;
+        } catch (NullPointerException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    public Duration getFormatDuration(String duration) {
+        try {
+            if (duration == null) throw new NullPointerException("Длительность задачи не задана");
+            int minutes = Integer.parseInt(duration);
+            if (minutes < 0) {
+                throw new IllegalArgumentException(String.format("Недопустимый формат ввода:'%s'," +
+                        "значение должно быть положительным числом%n", duration));
+            }
+            if (minutes % TIME_PERIOD != 0) {
+                minutes = roundByTimePeriod(minutes);
+                System.out.printf("Длительность задачи округлена кратно интервалу планирования - %s минутам.%n" +
+                        "Длительность: %s минут.%n", TIME_PERIOD, minutes);
+            }
+
+            return Duration.ofMinutes(minutes);
+        } catch (NumberFormatException ex) {
+            System.out.printf("Недопустимый формат ввода:'%s', введите количество минут%n", duration);
+            return null;
+        } catch (RuntimeException ex) {
+            System.out.println(ex.getMessage());
+            return null;
+        }
+    }
+
+    private int roundByTimePeriod(int minutes) { // Метод округления минут даты до шага сетки timeOverlaps
+        if (minutes < TIME_PERIOD) minutes = TIME_PERIOD;
+        int c = minutes % TIME_PERIOD; // Находим остаток от де ления даты в минутах на период
+        if (c <= TIME_PERIOD/2) { // Определяем в какую сторону проводить округление
+            minutes -= c; // в меньшую сторону
+        } else {
+            minutes += (TIME_PERIOD - c); // в большую сторону
+        }
+        return minutes;
     }
 
     @Override
@@ -77,73 +163,221 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     }
 
     @Override
-    public void createTask(Task task) { // Метод создания задачи, эпика, подзадачи
-        if (task instanceof Subtask) { // Проверка объекта-аргумента на принаджежность классу Subtask
-            id++;
+    public Set<Task> getPrioritizedTasks() {
+        //Comparator.nullsLast(Comparator.comparing(Task::getStartTime)) - первый вариант, не сработал
+        //Comparator.comparing(Task::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())) - второй вариант, не сработал
+
+        Set<Task> prioritizedTasks = new TreeSet<>(priorityByTimeCompare);
+        prioritizedTasks.addAll(tasks.values());
+        prioritizedTasks.addAll(subtasks.values());
+        return prioritizedTasks;
+    }
+
+    @Override
+    public void createTask(Task task) throws NullPointerException { // Метод создания задачи, эпика, подзадачи
+        if (task == null) {
+            throw new NullPointerException("Переданная задача не существует.\n");
+        } else if (task instanceof Subtask) { // Проверка объекта-аргумента на принадлежность классу Subtask
             Subtask subtask = (Subtask) task; // Приводим объект-аргумент к типу Subtask
+            try {
+                checkTimeOverlaps(subtask);
+            } catch (OverlapsTimeException e) {
+                System.out.println(e.getMessage());
+                return;
+            }
+            id++;
             subtask.setId(id); // Присваиваем id
             subtask.setStatus(Status.NEW); //присваиваем статус NEW
             subtasks.put(id, subtask); // Сохраняем в соответствующую мапу
-            epics.get(subtask.getEpicId()).setSubtaskInEpic(id); // Записываем в список родительского эпика id подзадачи
-            updateEpicStatus(epics.get(subtask.getEpicId())); // Обновляем статсус родительского эпика
-            System.out.println("Создана подзадача: \n" + subtask + '\n');
-        } else if (task instanceof Epic) { // Проверка объекта-аргумента на принаджежность классу Epic
+            Epic epic = epics.get(subtask.getEpicId());
+            epic.setSubtaskInEpic(id); // Записываем в список родительского эпика id подзадачи
+            updateEpicStatus(epic); // Обновляем статус родительского эпика
+            updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
+            //System.out.println("Создана подзадача: \n" + subtask + '\n');
+        } else if (task instanceof Epic) { // Проверка объекта-аргумента на принадлежность классу Epic
             id++;
             Epic epic = (Epic) task;
             epic.setId(id);
             epic.setStatus(Status.NEW);
             epics.put(id, epic);
-            System.out.println("Создан эпик: \n" + epic + '\n');
-        } else if (Task.class != task.getClass()) {
-            System.out.println("Создайте задачу типа Task, Epic или Subtask.\n");
-        } else {
+            //System.out.println("Создан эпик: \n" + epic + '\n');
+        } else if (task.getClass() == Task.class) {
+            try {
+                checkTimeOverlaps(task);
+            } catch (OverlapsTimeException e) {
+                System.out.println(e.getMessage());
+                return;
+            }
             id++;
             task.setId(id);
             task.setStatus(Status.NEW);
             tasks.put(id, task);
-            System.out.println("Создана задача: \n" + task + '\n');
+            //System.out.println("Создана задача: \n" + task + '\n');
         }
     }
 
     @Override
-    public void updateTask(Task task) { //Метод обновления задачи, подзадачи, эпике
-        if (task instanceof Subtask) {
+    public void updateTask(Task task) throws NullPointerException, IllegalArgumentException { //Метод обновления задачи, подзадачи, эпика
+        if (task == null) {
+            throw new NullPointerException("Переданная задача не существует.\n");
+        } else if (task instanceof Subtask) {
             Subtask subtask = (Subtask) task;
-            subtasks.put(subtask.getId(), subtask);
-            Epic epic = epics.get(subtask.getEpicId());
-            updateEpicStatus(epic); // Обновляем статус родительского эпика
-            System.out.println("Обновлена подзадача: \n" + subtask + "\n" +
-                    "Текущий статус: " + subtask.getStatus() + '\n');
+            if (subtasks.containsKey(subtask.getId())) {
+                try {
+                    checkTimeOverlaps(subtask);
+                } catch (OverlapsTimeException e) {
+                    System.out.println(e.getMessage());
+                    return;
+                }
+                subtasks.put(subtask.getId(), subtask);
+                Epic epic = epics.get(subtask.getEpicId()); //Получаем родительский эпик
+                updateEpicStatus(epic); // Обновляем статус родительского эпика
+                updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
+                System.out.println("Обновлена подзадача: \n" + subtask + "\n" +
+                        "Текущий статус: " + subtask.getStatus() + '\n');
+            } else {
+                throw new IllegalArgumentException(
+                        "Обновляемая подзадача c ID = " + subtask.getId() + " в списке подзадач не обнаружена.\n"
+                );
+            }
         } else if (task instanceof Epic) {
             Epic epic = (Epic) task;
-            epics.put(epic.getId(), epic);
-            System.out.println("Обновлен эпик: \n" + epic + "\n" +
-                    "Текущий статус: " + epic.getStatus() + '\n');
-        } else if (Task.class != task.getClass()) {
-            System.out.println("Обновляемая задача должна иметь тип Task, Epic или Subtask.\n");
-        } else {
-            tasks.put(task.getId(), task);
-            System.out.println("Обновлена задача: \n" + task + "\n" +
-                    "Текущий статус: " + task.getStatus() + '\n');
+            if (epics.containsKey(epic.getId())) {
+                updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
+                epics.put(epic.getId(), epic);
+                System.out.println("Обновлен эпик: \n" + epic + "\n" + "Текущий статус: " + epic.getStatus() + '\n');
+            } else {
+                throw new IllegalArgumentException(
+                        "Обновляемый эпик c ID = " + epic.getId() + " в списке эпиков не обнаружен.\n"
+                );
+            }
+        } else if (Task.class == task.getClass()) {
+            if (tasks.containsKey(task.getId())) {
+                try {
+                    checkTimeOverlaps(task);
+                } catch (OverlapsTimeException e) {
+                    System.out.println(e.getMessage());
+                    return;
+                }
+                tasks.put(task.getId(), task);
+                System.out.println("Обновлена задача: \n" + task + "\n" +
+                        "Текущий статус: " + task.getStatus() + '\n');
+            } else {
+                throw new IllegalArgumentException(
+                        "Обновляемая задача c ID = " + task.getId() + " в списке задач не обнаружена.\n"
+                );
+            }
+        }
+    }
+
+    //Метод проверки пересечений времени выполнения задач
+    protected void checkTimeOverlaps(Task task) throws OverlapsTimeException {
+        /* Контракт метода:
+         * Метод бронирует все ноды от timeNode >= taskStartTime до timeNode < getEndTime.
+         * Нода timeNode = getEndTime НЕ БРОНИРУЕТСЯ для предотвращения появления пробелов t = TIME_PERIOD
+        * */
+
+        //Если старт или длительность не заданы - прерываем метод
+        if (task.getStartTime() == null || task.getDuration() == null) return;
+
+        LocalDateTime taskStartTime = task.getStartTime();
+        LocalDateTime taskEndTime = task.getEndTime();
+        Duration duration = task.getDuration();
+
+        //Проверяем, не выходит ли заданное время за границы START_YEAR или END_YEAR
+        if (taskStartTime.isBefore(START_YEAR) || !taskStartTime.isBefore(END_YEAR)) {
+            throw new OverlapsTimeException(String.format("Время старта задачи не должно выходить " +
+                    "за пределы года планирования.%nНачало года: %s%nКонец года: %s",
+                    START_YEAR.format(DATE_TIME_FORMATTER), END_YEAR.format(DATE_TIME_FORMATTER)));
+        } else if (taskEndTime.isAfter(END_YEAR)) {
+            throw new OverlapsTimeException(String.format("Время завершения задачи не должно выходить " +
+                            "за пределы года планирования.%nКонец года: %s", END_YEAR.format(DATE_TIME_FORMATTER)));
+        }
+
+        /* Случай, где StartTime свободен в timeOverlaps и duration == TIME_PERIOD
+         * S1|-15min-|E1, где S и E - старт и конец задачи, 1 - индекс
+         *         S2|---------|E2
+         * */
+        if (timeOverlaps.get(taskStartTime) && duration.toMinutes() == TIME_PERIOD) {
+            timeOverlaps.replace(taskStartTime, true,false);
+            timeOverlaps.replace(taskEndTime, true,false);
+            return;
+        }
+
+        /* Случай, где StartTime и EndTime свободны в timeOverlaps, но внутри их duration может быть другая задача
+        * S1|--------------------------|E1
+        *        S2|---------|E2
+        * */
+        if (timeOverlaps.get(taskStartTime) && timeOverlaps.get(taskEndTime)) {
+            int countPeriod = (int) (duration.toMinutes() / TIME_PERIOD) - 1;
+            List<LocalDateTime> freeInnerNodes = new ArrayList<>(countPeriod);
+            List<LocalDateTime> busyInnerNodes = new ArrayList<>(countPeriod);
+            LocalDateTime innerTimeNode = taskStartTime.plusMinutes(TIME_PERIOD);
+
+            while (innerTimeNode.isBefore(taskEndTime)) {
+                if (timeOverlaps.get(innerTimeNode)) { // Если нода свободна(true) - записываем в freeInnerNodes
+                    freeInnerNodes.add(innerTimeNode);
+                } else { // Если занята - записываем в busyInnerNodes
+                    busyInnerNodes.add(innerTimeNode);
+                }
+                innerTimeNode = innerTimeNode.plusMinutes(TIME_PERIOD);
+            }
+
+            if (busyInnerNodes.isEmpty()) { // Если нет ни одной занятой ноды внутри duration задачи
+                timeOverlaps.replace(taskStartTime, true,false);
+                // бронируем внутренние ноды между StartTime и EndTime
+                freeInnerNodes.forEach(timeNode -> timeOverlaps.replace(timeNode, true, false));
+            } else {
+                throw new OverlapsTimeException("Выбранное время перекрывает время выполнения других задач.");
+            }
+            return;
+        }
+        // Случай, когда пересекается с нодами(false) в timeOverlaps либо StartTime, либо EndTime, либо StartTime и EndTime
+        if (!timeOverlaps.get(taskStartTime) || !timeOverlaps.get(taskEndTime)) {
+            if (!timeOverlaps.get(taskStartTime) && !timeOverlaps.get(taskEndTime)) {
+                throw new OverlapsTimeException("Выбранные время старта и завершения заняты другими задачами");
+            } else if (!timeOverlaps.get(taskEndTime)) {
+                throw new OverlapsTimeException("Выбранное время завершения задачи пересекается с другой задачей.");
+            } else if (!timeOverlaps.get(taskStartTime)){
+                System.out.println();
+                throw new OverlapsTimeException("Выбранное время старта занято другой задачей.");
+            }
         }
     }
 
     @Override
     public void changeTaskStatus(int id, Status status) {
-        tasks.get(id).setStatus(status);
-        historyManager.add(tasks.get(id));
+        try {
+            if (status == null) throw new NullPointerException("Не указан новый статус.");
+            if (tasks.containsKey(id)) {
+                tasks.get(id).setStatus(status);
+                historyManager.add(tasks.get(id));
+            } else {
+                throw new IllegalArgumentException("Задача с ID = " + id + " не существует.");
+            }
+        } catch (RuntimeException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @Override
     public void changeSubtaskStatus(int id, Status status) {
-        subtasks.get(id).setStatus(status);
-        int epicId = subtasks.get(id).getEpicId();
-        historyManager.add(subtasks.get(id));
-        updateEpicStatus(epics.get(epicId)); // Обновил статус родительского эпика
+        try {
+            if (status == null) throw new NullPointerException("Не указан новый статус.");
+            if (subtasks.containsKey(id)) {
+                subtasks.get(id).setStatus(status);
+                int epicId = subtasks.get(id).getEpicId();
+                historyManager.add(subtasks.get(id));
+                updateEpicStatus(epics.get(epicId)); // Обновил статус родительского эпика
+            } else {
+                throw new IllegalArgumentException("Подзадача с ID = " + id + " не существует.");
+            }
+        } catch (RuntimeException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
-    // Так как updateEpicStatus() работает с данными внутри класса - объявляю и реализую его только в самом классе
-    public void updateEpicStatus(Epic epic) { // Метод обновления статуса эпика по статусам включенных подзадач
+    protected void updateEpicStatus(Epic epic) { // Метод обновления статуса эпика по статусам включенных подзадач
         if (epic.getSubtasksInEpic().isEmpty()) { // Проверяяем наличие подзадач у эпика
             epic.setStatus(Status.NEW);
             return; //Прервал выполнение метода
@@ -169,6 +403,45 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             }
         }
         historyManager.add(epic);
+    }
+
+    protected void updateEpicDuration(Epic epic) {
+        if (epic.getSubtasksInEpic().isEmpty()) {  //проверка наличия подзадач у эпика
+            if (epic.getStartTime() != null) { // обNULLяем параметры времени у эпика, если удалены все его сабтаски
+                epic.setStartTime(null); epic.setDuration(null); epic.setEndTime(null);
+            }
+            return;
+        }
+        List<Subtask> subtaskList = new ArrayList<>(epic.getSubtasksInEpic().size());
+
+        epic.getSubtasksInEpic().forEach(subtaskID -> {Subtask subtask = subtasks.get(subtaskID);
+            //проверяем, задан ли старт и длительность выполнения у сабтасок эпика
+            if (subtask.getStartTime() != null && subtask.getDuration() != null) subtaskList.add(subtask);
+        });
+
+        if (subtaskList.isEmpty()) { //проверяем, есть ли сабтаски с starTime != null && Duration() != null
+            if (epic.getStartTime() != null) { //обнуляем параметры времени у эпика, если его сабтаски с starTime==null
+                epic.setStartTime(null); epic.setDuration(null); epic.setEndTime(null);
+            }
+        } else {
+            //Т.к по условию ТЗ время выполнения задач не может пересекаться,
+            // то endTime эпика будет endTime последней подзадачи в списке subtaskList
+            subtaskList.sort(priorityByTimeCompare);
+            epic.setStartTime(subtaskList.get(0).getStartTime()); // Рассчитали начало эпика
+            epic.setEndTime(subtaskList.get(subtaskList.size()-1).getEndTime()); // Рассчитали конец эпика
+            // Определили суммарную длительность всех подзадач эпика = длительности эпика
+            long minutesSubtasks = subtaskList.stream().map(Task::getDuration).mapToLong(Duration::toMinutes).sum();
+            epic.setDuration(Duration.ofMinutes(minutesSubtasks)); //Задали продолжительность эпика
+        }
+
+        /* // Находим подзадачу эпика с самым ранним стартом выполнения
+        epic.getSubtasksInEpic().stream().map(subtaskId -> Optional.of(subtasks.get(subtaskId))).map(Optional::get)
+                .filter(subtask -> subtask.getStartTime() != null)
+                .min(Comparator.comparing(Task::getStartTime))
+                .ifPresentOrElse(
+                        subtask -> epic.setStartTime(subtask.getStartTime()),
+                        () -> System.out.printf("Время выполнения подзадач эпика numID%d не задано", epic.getId())
+                );*/
     }
 
     @Override
@@ -208,6 +481,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             Epic epic = epics.get(epicId); // Получаем родительский эпик
             epic.getSubtasksInEpic().remove(id); // Удаляем из списка родительского эпика id подзадачи
             updateEpicStatus(epic); // Обновляем статус эпика
+            updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
             historyManager.remove(id); // Удаляем  подзадачу из истории просмотров
             System.out.println("Подзадача " + subtasks.remove(id) + '\n' +
                     " УДАЛЕНА.\n");
@@ -218,22 +492,19 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
 
     @Override
     public void clearTasks() { // Удалить все задачи
-        if (tasks.isEmpty()) {
-            System.out.println("Ни одна задача пока не создана.\n");
-        } else {
+        if (!tasks.isEmpty()) {
             for (Integer id : tasks.keySet()) {
                 historyManager.remove(id); // Удаляем из списка просмотров все задачи task
             }
             tasks.clear();
-            System.out.println("Все задачи удалены.\n");
+            //System.out.println("Все задачи удалены.\n");
         }
+        //System.out.println("Ни одна задача пока не создана.\n");
     }
 
     @Override
     public void clearEpics() { // Удалить все эпики с подзадачами
-        if (epics.isEmpty()) {
-            System.out.println("Ни один эпик пока не создан.\n");
-        } else {
+        if (!epics.isEmpty()) {
             for (Integer id : epics.keySet()) {
                 historyManager.remove(id); // Удаляем из списка просмотров все эпики epic
             }
@@ -244,15 +515,14 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
 
             epics.clear();
             subtasks.clear();
-            System.out.println("Все эпики с подзадачами удалены.\n");
+            //System.out.println("Все эпики с подзадачами удалены.\n");
         }
+        //System.out.println("Ни один эпик пока не создан.\n");
     }
 
     @Override
     public void clearSubtasks() { //Удалить все подзадачи
-        if (subtasks.isEmpty()) {
-            System.out.println("Ни одна подзадача пока не создана.\n");
-        } else {
+        if (!subtasks.isEmpty()) {
             for (Integer id : subtasks.keySet()) {
                 historyManager.remove(id); // Удаляем из списка просмотров все подзадачи subtask
             }
@@ -261,10 +531,12 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             for (Integer id : epics.keySet()) { // После удаления всех подзадач возвращаем статус "NEW" каждому эпику
                 Epic epic = epics.get(id);
                 epic.getSubtasksInEpic().clear(); // Удалил подзадачи в списке эпика
-                updateEpicStatus(epic); //Исправил изменение статуса через метод
+                updateEpicStatus(epic); //Изменил статус эпика
+                updateEpicDuration(epic);  //Рассчитываем/обновляем время выполнения эпика
             }
-            System.out.println("Подзадачи во всех эпиках удалены.\n");
+            //System.out.println("Подзадачи во всех эпиках удалены.\n");
         }
+        //System.out.println("Ни одна подзадача пока не создана.\n");
     }
 
     @Override

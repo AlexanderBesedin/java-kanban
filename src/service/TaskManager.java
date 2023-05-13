@@ -4,7 +4,10 @@ import model.Epic;
 import model.Subtask;
 import model.Task;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface TaskManager {
 
@@ -24,6 +27,12 @@ public interface TaskManager {
 
     List<Task> getHistory();  // добавил метод получения истории просмотров задач
 
+    Set<Task> getPrioritizedTasks();
+
+    LocalDateTime getFormatStartTime(String s);
+
+    Duration getFormatDuration(String s);
+
     void createTask(Task task); // Метод создания задачи, эпика, подзадачи
 
     void updateTask(Task task); //Метод обновления задачи, подзадачи, эпика
@@ -31,7 +40,6 @@ public interface TaskManager {
     void changeTaskStatus(int id, Status status);
 
     void changeSubtaskStatus(int id, Status status);
-
 
     void removeTask(int id); // Удалить задачу по идентификатору
 

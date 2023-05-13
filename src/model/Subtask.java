@@ -1,5 +1,7 @@
 package model;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class Subtask extends Task { //Класс для создания объектов задач типа Subtask
@@ -7,6 +9,11 @@ public class Subtask extends Task { //Класс для создания объ�
 
     public Subtask(String name, String description, int epicId) {
         super(name, description);
+        this.epicId = epicId;
+    }
+
+    public Subtask(String name, String description, int epicId, LocalDateTime startTime, Duration duration) {
+        super(name, description, startTime, duration);
         this.epicId = epicId;
     }
 
