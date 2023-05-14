@@ -24,6 +24,9 @@ public class Main {
         Task task;
         Epic epic;
         Subtask subtask;
+        TimeDurationUtil timeFormat = new TimeDurationUtil(
+                InMemoryTaskManager.TIME_PERIOD,
+                InMemoryTaskManager.DATE_TIME_FORMATTER);
 
         String child = "dev" + "/java-kanban/resources/saved.csv";
         File file = new File(homeDir, child);
@@ -64,24 +67,24 @@ public class Main {
             name = "Получить водительское удостоверение";
             description = "Получить ВУ категории А и В. Пройти обучение в автошколе Ягуар.";
             epic = new Epic(name, description);
-            taskManager.createTask(epic); //ID == 3
+            taskManager.createEpic(epic); //ID == 3
 
             // Создал первую подзадачу #4
             name = "Пройти обучение в автошколе Ягуар";
             description = "Пройти обучение теории и практике вождения (50 часов). Сдать внутренние экзамены.";
             epicId = epic.getId(); //ID == 3
             subtask = new Subtask(name, description, epicId);
-            taskManager.createTask(subtask);
+            taskManager.createSubtask(subtask);
 
             // Создал вторую подзадачу #5
             name = "Сдать экзамен в ГИБДД на категорию В";
             description = "Сдать теорию вождения, автодром и вождение в городе на экзамене в ГИБДД на категорию В.";
             epicId = epic.getId();
-            LocalDateTime startTime = taskManager.getFormatStartTime("11.05.2023 13:30");
-            Duration duration = taskManager.getFormatDuration("120");
+            LocalDateTime startTime = timeFormat.getFormatStartTime("11.05.2023 13:30");
+            Duration duration = timeFormat.getFormatDuration("120");
             //subtask = new Subtask(name, description, epicId);
             subtask = new Subtask(name, description, epicId, startTime, duration);
-            taskManager.createTask(subtask);
+            taskManager.createSubtask(subtask);
 
         /*while (startTime.isBefore(subtask.getEndTime())) {
             startTime = startTime.plusMinutes(15);
@@ -93,12 +96,12 @@ public class Main {
             name = "Сдать экзамен в ГИБДД на категорию А";
             description = "Сдать практический экзамен на площадке в ГИБДД на категорию А.";
             epicId = epic.getId();
-            startTime = taskManager.getFormatStartTime("11.05.2023 11:53");
+            startTime = timeFormat.getFormatStartTime("11.05.2023 11:53");
             //startTime = taskManager.getFormatStartTime("31.12.2023 23:53");
-            duration = taskManager.getFormatDuration("30");
+            duration = timeFormat.getFormatDuration("30");
             //subtask = new Subtask(name, description, epicId);
             subtask = new Subtask(name, description, epicId, startTime, duration);
-            taskManager.createTask(subtask);
+            taskManager.createSubtask(subtask);
 
 //        System.out.println(epic.getStartTime());
 //        System.out.println(epic.getEndTime());
@@ -106,13 +109,13 @@ public class Main {
 
             //System.out.println("Порядок приоритета задач:\n" + taskManager.getPrioritizedTasks());
 
-
-            Set<LocalDateTime> timeNodes = new TreeSet<>(Comparator.naturalOrder());
+            //Тесе корректности заполнения timeOverlaps
+            /*Set<LocalDateTime> timeNodes = new TreeSet<>(Comparator.naturalOrder());
             timeNodes.addAll(InMemoryTaskManager.timeOverlaps.keySet());
             for (LocalDateTime timeNode : timeNodes) {
                 System.out.println(timeNode.format(InMemoryTaskManager.DATE_TIME_FORMATTER));
             }
-
+*/
         //System.out.println(timeNodes.size());
         //System.out.println(LocalDateTime.of(LocalDate.now().getYear(),1,1,2,30).toLocalTime());
 
@@ -120,7 +123,7 @@ public class Main {
             name = "Подготовиться к отпуску";
             description = "Закрыть дела, задачи перед отпуском, купить билеты, заброниронировать отель.";
             epic = new Epic(name, description);
-            taskManager.createTask(epic);
+            taskManager.createEpic(epic);
 
 
             taskManager.getTask(1); // первый посмотр

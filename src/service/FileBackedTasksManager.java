@@ -50,8 +50,32 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
     }
 
     @Override
+    public void createEpic(Epic epic) {
+        super.createEpic(epic);
+        save();
+    }
+
+    @Override
+    public void createSubtask(Subtask subtask) {
+        super.createSubtask(subtask);
+        save();
+    }
+
+    @Override
     public void updateTask(Task task) {
         super.updateTask(task);
+        save();
+    }
+
+    @Override
+    public void updateEpic(Epic epic) {
+        super.updateEpic(epic);
+        save();
+    }
+
+    @Override
+    public void updateSubtask(Subtask subtask) {
+        super.updateSubtask(subtask);
         save();
     }
 
@@ -125,7 +149,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         try (PrintWriter writer = new PrintWriter(new FileWriter(file, StandardCharsets.UTF_8, true))) {
             writer.write(TITLE);
 
-            for (int i = 1; i <= getLastId(); i++) {
+            for (int i = 1; i <= id; i++) {
                 Task task = tasks.getOrDefault(i, null);
                 Epic epic = epics.getOrDefault(i, null);
                 Subtask subtask = subtasks.getOrDefault(i, null);
@@ -238,6 +262,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     private static List<Integer> historyFromString(String value) {
         List<Integer> history = new ArrayList<>();
+        if (value == null) return history;
         if (!value.isBlank()) {
             String[] views = value.split("\\|");
             for (String view : views) {
@@ -264,14 +289,14 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
                 if (task instanceof Subtask) {
                     Subtask subtask = (Subtask) task;
-                    subtasks.put(subtask.getId(), subtask);
+                    newFBTaskManager.subtasks.put(subtask.getId(), subtask);
                     allTasks.put(subtask.getId(), subtask);
                 } else if (task instanceof Epic) {
                     Epic epic = (Epic) task;
-                    epics.put(epic.getId(), epic);
+                    newFBTaskManager.epics.put(epic.getId(), epic);
                     allTasks.put(epic.getId(), epic);
                 } else {
-                    tasks.put(task.getId(), task);
+                    newFBTaskManager.tasks.put(task.getId(), task);
                     allTasks.put(task.getId(), task);
                 }
             }
@@ -280,13 +305,13 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
             for (Integer id : allTasks.keySet()) { // Записываем последнее max значение счетчика id в IMTaskManager
                 maxId = (maxId < id) ? id : maxId;
             }
-            setLastId(maxId); // Восстановили последний максимальный id
+            newFBTaskManager.id = maxId; // Восстановили последний максимальный id
 
             line = reader.readLine();
             List<Integer> history = historyFromString(line);
             if (!history.isEmpty()) {
                 for (Integer id : history) {
-                    historyManager.add(allTasks.getOrDefault(id, null));
+                    newFBTaskManager.historyManager.add(allTasks.getOrDefault(id, null));
                 }
             }
         } catch (IOException e) {

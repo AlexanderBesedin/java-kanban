@@ -29,13 +29,17 @@ public interface TaskManager {
 
     Set<Task> getPrioritizedTasks();
 
-    LocalDateTime getFormatStartTime(String s);
-
-    Duration getFormatDuration(String s);
-
     void createTask(Task task); // Метод создания задачи, эпика, подзадачи
 
+    void createEpic(Epic epic);
+
+    void createSubtask(Subtask subtask);
+
     void updateTask(Task task); //Метод обновления задачи, подзадачи, эпика
+
+    void updateEpic(Epic epic) throws NullPointerException, IllegalArgumentException;
+
+    void updateSubtask(Subtask subtask) throws NullPointerException, IllegalArgumentException;
 
     void changeTaskStatus(int id, Status status);
 

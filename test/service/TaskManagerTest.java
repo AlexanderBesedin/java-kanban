@@ -16,6 +16,9 @@ abstract class TaskManagerTest<T extends TaskManager> {
     protected T taskManager;
     protected String name = "name";
     protected String description = "some description";
+    protected TimeDurationUtil timeFormat = new TimeDurationUtil(
+            InMemoryTaskManager.TIME_PERIOD,
+            InMemoryTaskManager.DATE_TIME_FORMATTER);
 
     protected Task makeTask(String name, String description) {
         Task task = new Task(name, description);
@@ -25,14 +28,14 @@ abstract class TaskManagerTest<T extends TaskManager> {
 
     protected Epic makeEpic(String name, String description) {
         Epic epic = new Epic(name, description);
-        taskManager.createTask(epic);
+        taskManager.createEpic(epic);
         return epic;
     }
 
     protected Subtask makeSubtask(String name, String description) {
         Epic epic = makeEpic(name, description); //#1
         Subtask subtask = new Subtask(name, description, epic.getId());
-        taskManager.createTask(subtask); //#2
+        taskManager.createSubtask(subtask); //#2
         return subtask;
     }
 
@@ -75,7 +78,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     }
 
     @Test
-    void shouldThrowsIfCreateTaskNull() { //Null case
+    void shouldThrowsIfCreateTaskNull() { //Null case Task
         final NullPointerException exception = assertThrows(
                 NullPointerException.class,
                 () -> {
@@ -83,6 +86,28 @@ abstract class TaskManagerTest<T extends TaskManager> {
                 }
         );
         assertEquals("Переданная задача не существует.\n", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowsIfCreateEpicNull() { //Null case Epic
+        final NullPointerException exception = assertThrows(
+                NullPointerException.class,
+                () -> {
+                    taskManager.createEpic(null);
+                }
+        );
+        assertEquals("Переданный эпик не существует.\n", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowsIfCreateSubtaskNull() { //Null case Subtask
+        final NullPointerException exception = assertThrows(
+                NullPointerException.class,
+                () -> {
+                    taskManager.createSubtask(null);
+                }
+        );
+        assertEquals("Переданная подзадача не существует.\n", exception.getMessage());
     }
 
     @Test
@@ -127,7 +152,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldUpdateEpic() { //Default case
         Epic epic = makeEpic(name, description);
         epic.setDescription("description1");
-        taskManager.updateTask(epic);
+        taskManager.updateEpic(epic);
         assertEquals("EPIC{numID-1, name='name', status='NEW'}, description='description1... '",
                 epic.toString());
     }
@@ -138,7 +163,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         epic.setId(1);
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> taskManager.updateTask(epic)
+                () -> taskManager.updateEpic(epic)
         );
         assertEquals(
                 "Обновляемый эпик c ID = " + epic.getId() + " в списке эпиков не обнаружен.\n",
@@ -152,7 +177,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         epic.setId(0);
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> taskManager.updateTask(epic)
+                () -> taskManager.updateEpic(epic)
         );
         assertEquals(
                 "Обновляемый эпик c ID = " + epic.getId() + " в списке эпиков не обнаружен.\n",
@@ -164,7 +189,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldUpdateSubtask() { //Default case
         Subtask subtask = makeSubtask(name, description);
         subtask.setDescription("description1");
-        taskManager.updateTask(subtask);
+        taskManager.updateSubtask(subtask);
         assertEquals("SUBTASK{numID-2, name='name', status='NEW'}, description='description1... '",
                 subtask.toString());
     }
@@ -176,7 +201,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         subtask.setId(4);
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> taskManager.updateTask(subtask)
+                () -> taskManager.updateSubtask(subtask)
         );
         assertEquals(
                 "Обновляемая подзадача c ID = " + subtask.getId() + " в списке подзадач не обнаружена.\n",
@@ -191,7 +216,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         subtask.setId(0);
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> taskManager.updateTask(subtask)
+                () -> taskManager.updateSubtask(subtask)
         );
         assertEquals(
                 "Обновляемая подзадача c ID = " + subtask.getId() + " в списке подзадач не обнаружена.\n",
@@ -208,6 +233,28 @@ abstract class TaskManagerTest<T extends TaskManager> {
                 }
         );
         assertEquals("Переданная задача не существует.\n", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowsIfUpdateEpicNull() { //Null case Epic
+        final NullPointerException exception = assertThrows(
+                NullPointerException.class,
+                () -> {
+                    taskManager.updateEpic(null);
+                }
+        );
+        assertEquals("Переданный эпик не существует.\n", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowsIfUpdateSubtaskNull() { //Null case Subtask
+        final NullPointerException exception = assertThrows(
+                NullPointerException.class,
+                () -> {
+                    taskManager.updateSubtask(null);
+                }
+        );
+        assertEquals("Переданная подзадача не существует.\n", exception.getMessage());
     }
 
     @Test
@@ -272,7 +319,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldGetListSubtasksOfChosenExistEpic() {
         makeSubtask(name, description); //Epic#1, Subtask#2
         Subtask subtask = new Subtask("name", "other description", taskManager.getEpic(1).getId());
-        taskManager.createTask(subtask);
+        taskManager.createSubtask(subtask);
         List<Subtask> subtasks = List.of(taskManager.getSubtask(2), taskManager.getSubtask(3));
         assertTrue(taskManager.getSubtasksOfEpic(1).containsAll(subtasks));
     }
@@ -356,24 +403,24 @@ abstract class TaskManagerTest<T extends TaskManager> {
 
     @Test
     void shouldGetListPrioritizedTasksByTime() { // Default case
-        Epic task = new Epic(name, description);//id#1
-        taskManager.createTask(task);
+        Epic epic = new Epic(name, description);//id#1
+        taskManager.createEpic(epic);
         Subtask task1 = new Subtask(//id#2
                 name, description, 1,
-                taskManager.getFormatStartTime("12.05.2023 09:37"),
-                taskManager.getFormatDuration("55")
+                timeFormat.getFormatStartTime("12.05.2023 09:37"),
+                timeFormat.getFormatDuration("55")
         );
-        taskManager.createTask(task1);
+        taskManager.createSubtask(task1);
         Task task2 = new Task(//id#3
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 10:30"),
-                taskManager.getFormatDuration("90")
+                timeFormat.getFormatStartTime("12.05.2023 10:30"),
+                timeFormat.getFormatDuration("90")
         );
         taskManager.createTask(task2);
         Task task3 = new Task(//id#4
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:08"),
-                taskManager.getFormatDuration("30")
+                timeFormat.getFormatStartTime("12.05.2023 12:08"),
+                timeFormat.getFormatDuration("30")
         );
         taskManager.createTask(task3);
 
@@ -407,7 +454,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         String time = "12.05.2023 12:22";
         String expectedTime = "12.05.2023 12:15";
         assertEquals(expectedTime,
-                taskManager.getFormatStartTime(time).format(InMemoryTaskManager.DATE_TIME_FORMATTER));
+                timeFormat.getFormatStartTime(time).format(InMemoryTaskManager.DATE_TIME_FORMATTER));
     }
 
     @Test
@@ -415,18 +462,18 @@ abstract class TaskManagerTest<T extends TaskManager> {
         String time = "12.05.2023 12:05";
         String expectedTime = "12.05.2023 12:15";
         assertEquals(expectedTime,
-                taskManager.getFormatStartTime(time).format(InMemoryTaskManager.DATE_TIME_FORMATTER));
+                timeFormat.getFormatStartTime(time).format(InMemoryTaskManager.DATE_TIME_FORMATTER));
     }
 
     @Test
     void shouldGetNullWhenStartTimeIncorrectFormat() { //Incorrect argument case
         String time = "12/05/2023 12:22";
-        assertNull(taskManager.getFormatStartTime(time));
+        assertNull(timeFormat.getFormatStartTime(time));
     }
 
     @Test
     void shouldGetNullWhenStartTimeIsNull() { //Null case
-        assertNull(taskManager.getFormatStartTime(null));
+        assertNull(timeFormat.getFormatStartTime(null));
     }
 
     @Test
@@ -434,7 +481,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         String duration = "38";
         String expectedDuration = "45";
         assertEquals(expectedDuration,
-                String.valueOf(taskManager.getFormatDuration(duration).toMinutes()));
+                String.valueOf(timeFormat.getFormatDuration(duration).toMinutes()));
     }
 
     @Test
@@ -442,24 +489,24 @@ abstract class TaskManagerTest<T extends TaskManager> {
         String duration = "3";
         String expectedDuration = "15";
         assertEquals(expectedDuration,
-                String.valueOf(taskManager.getFormatDuration(duration).toMinutes()));
+                String.valueOf(timeFormat.getFormatDuration(duration).toMinutes()));
     }
 
     @Test
     void shouldGetNullWhenDurationIsNegative() { //Incorrect argument case1
         String duration = "-38";
-        assertNull(taskManager.getFormatDuration(duration));
+        assertNull(timeFormat.getFormatDuration(duration));
     }
 
     @Test
     void shouldGetNullWhenDurationIsNotNumber() { //Incorrect argument case2
         String duration = "-38asd";
-        assertNull(taskManager.getFormatDuration(duration));
+        assertNull(timeFormat.getFormatDuration(duration));
     }
 
     @Test
     void shouldGetNullWhenDurationIsNull() { //Null case
-        assertNull(taskManager.getFormatDuration(null));
+        assertNull(timeFormat.getFormatDuration(null));
     }
 
     //Проверка метода checkTimeOverlaps через createTask
@@ -467,11 +514,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldCreateTasksIfTimeNotOverlaps() { //Задачи не пересекаются, все задачи могут быть созданы
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:00"), taskManager.getFormatDuration("60")
+                timeFormat.getFormatStartTime("12.05.2023 12:00"), timeFormat.getFormatDuration("60")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 14:00"), taskManager.getFormatDuration("30")
+                timeFormat.getFormatStartTime("12.05.2023 14:00"), timeFormat.getFormatDuration("30")
         );
 
         taskManager.createTask(task1);// id#1
@@ -483,11 +530,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldCreateTaskIfStartTimeEqualPrevEndTime() {
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:00"), taskManager.getFormatDuration("60")
+                timeFormat.getFormatStartTime("12.05.2023 12:00"), timeFormat.getFormatDuration("60")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 13:00"), taskManager.getFormatDuration("30")
+                timeFormat.getFormatStartTime("12.05.2023 13:00"), timeFormat.getFormatDuration("30")
         );
 
         taskManager.createTask(task1);// id#1
@@ -499,11 +546,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfTimeOverlapsOtherTask() {
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:00"), taskManager.getFormatDuration("60")
+                timeFormat.getFormatStartTime("12.05.2023 12:00"), timeFormat.getFormatDuration("60")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 11:30"), taskManager.getFormatDuration("180")
+                timeFormat.getFormatStartTime("12.05.2023 11:30"), timeFormat.getFormatDuration("180")
         );
 
         taskManager.createTask(task1);// id#1
@@ -515,11 +562,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfTimeBooked() { //Выбранные StartTime и EndTime новой задачи уже заняты другой задачей
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 11:30"), taskManager.getFormatDuration("180")
+                timeFormat.getFormatStartTime("12.05.2023 11:30"), timeFormat.getFormatDuration("180")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:00"), taskManager.getFormatDuration("60")
+                timeFormat.getFormatStartTime("12.05.2023 12:00"), timeFormat.getFormatDuration("60")
         );
 
         taskManager.createTask(task1);// id#1
@@ -531,11 +578,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfStartTimeBooked() { //Выбранное StartTime новой задачи уже занято другой задачей
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 11:30"), taskManager.getFormatDuration("90")
+                timeFormat.getFormatStartTime("12.05.2023 11:30"), timeFormat.getFormatDuration("90")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 12:45"), taskManager.getFormatDuration("60")
+                timeFormat.getFormatStartTime("12.05.2023 12:45"), timeFormat.getFormatDuration("60")
         );
 
         taskManager.createTask(task1);// id#1
@@ -547,11 +594,11 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfEndTimeBooked() { //Выбранное EndTime новой задачи уже заняты другой задачей
         Task task1 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 10:30"), taskManager.getFormatDuration("180")
+                timeFormat.getFormatStartTime("12.05.2023 10:30"), timeFormat.getFormatDuration("180")
         );
         Task task2 = new Task(
                 name, description,
-                taskManager.getFormatStartTime("12.05.2023 09:00"), taskManager.getFormatDuration("90")
+                timeFormat.getFormatStartTime("12.05.2023 09:00"), timeFormat.getFormatDuration("90")
         );
 
         taskManager.createTask(task1);// id#1
@@ -562,7 +609,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldCreateTaskIfStartTimeEqualStartYear() { //Выбранное StartTime новой задачи равно START_YEAR
         Task task = new Task(
-                name, description, InMemoryTaskManager.START_YEAR, taskManager.getFormatDuration("180")
+                name, description, InMemoryTaskManager.START_YEAR, timeFormat.getFormatDuration("180")
         );
         taskManager.createTask(task);// id#1
         assertNotNull(taskManager.getTask(task.getId()));
@@ -571,7 +618,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfStartTimeBeforeStartYear() { //Выбранное StartTime новой задачи ранее границы START_YEAR
         Task task = new Task(
                 name, description,
-                InMemoryTaskManager.START_YEAR.minusMinutes(15), taskManager.getFormatDuration("180")
+                InMemoryTaskManager.START_YEAR.minusMinutes(15), timeFormat.getFormatDuration("180")
         );
         taskManager.createTask(task);// id#1
         assertNull(taskManager.getTask(task.getId()));
@@ -581,7 +628,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfStartTimeEqualEndYear() { //Выбранное StartTime новой задачи равно границе END_YEAR
         Task task = new Task(
                 name, description,
-                InMemoryTaskManager.END_YEAR, taskManager.getFormatDuration("180")
+                InMemoryTaskManager.END_YEAR, timeFormat.getFormatDuration("180")
         );
         taskManager.createTask(task);// id#1
         assertNull(taskManager.getTask(task.getId()));
@@ -591,7 +638,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfStartTimeAfterEndYear() { //Выбранное StartTime новой задачи позднее границы END_YEAR
         Task task = new Task(
                 name, description,
-                InMemoryTaskManager.END_YEAR.plusMinutes(15), taskManager.getFormatDuration("180")
+                InMemoryTaskManager.END_YEAR.plusMinutes(15), timeFormat.getFormatDuration("180")
         );
         taskManager.createTask(task);// id#1
         assertNull(taskManager.getTask(task.getId()));
@@ -601,7 +648,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldCreateTaskIfEndTimeEqualEndYear() { //Выбранное EndTime новой задачи равно границе END_YEAR
         Task task = new Task(
                 name, description,
-                InMemoryTaskManager.END_YEAR.minusMinutes(15), taskManager.getFormatDuration("15")
+                InMemoryTaskManager.END_YEAR.minusMinutes(15), timeFormat.getFormatDuration("15")
         );
         taskManager.createTask(task);// id#1
         assertNotNull(taskManager.getTask(task.getId()));
@@ -611,7 +658,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     void shouldDoNotCreateTaskIfEndTimeAfterEndYear() { //Выбранное EndTime новой задачи позднее границы END_YEAR
         Task task = new Task(
                 name, description,
-                InMemoryTaskManager.END_YEAR.minusMinutes(15), taskManager.getFormatDuration("30")
+                InMemoryTaskManager.END_YEAR.minusMinutes(15), timeFormat.getFormatDuration("30")
         );
         taskManager.createTask(task);// id#1
         assertNull(taskManager.getTask(task.getId()));
@@ -630,13 +677,13 @@ abstract class TaskManagerTest<T extends TaskManager> {
         Epic epic = makeEpic(name, description);
         Subtask subtask = new Subtask(
                 name, description, epic.getId(),
-                taskManager.getFormatStartTime("12.05.2023 09:00"), taskManager.getFormatDuration("90")
+                timeFormat.getFormatStartTime("12.05.2023 09:00"), timeFormat.getFormatDuration("90")
                 );
-        taskManager.createTask(subtask);
-        taskManager.createTask(
+        taskManager.createSubtask(subtask);
+        taskManager.createSubtask(
             new Subtask(
                     name, description, epic.getId(),
-                    taskManager.getFormatStartTime("12.05.2023 11:00"), taskManager.getFormatDuration("90")
+                    timeFormat.getFormatStartTime("12.05.2023 11:00"), timeFormat.getFormatDuration("90")
             )
         );
         assertEquals(subtask.getStartTime(), epic.getStartTime());
@@ -647,13 +694,13 @@ abstract class TaskManagerTest<T extends TaskManager> {
         Epic epic = makeEpic(name, description);
         Subtask subtask = new Subtask(
                 name, description, epic.getId(),
-                taskManager.getFormatStartTime("12.05.2023 11:00"), taskManager.getFormatDuration("90")
+                timeFormat.getFormatStartTime("12.05.2023 11:00"), timeFormat.getFormatDuration("90")
         );
-        taskManager.createTask(subtask);
-        taskManager.createTask(
+        taskManager.createSubtask(subtask);
+        taskManager.createSubtask(
             new Subtask(
                 name, description, epic.getId(),
-                taskManager.getFormatStartTime("12.05.2023 09:00"), taskManager.getFormatDuration("90")
+                    timeFormat.getFormatStartTime("12.05.2023 09:00"), timeFormat.getFormatDuration("90")
             )
         );
         assertEquals(subtask.getEndTime(), epic.getEndTime());
@@ -665,13 +712,13 @@ abstract class TaskManagerTest<T extends TaskManager> {
         Duration duration1 = Duration.ofMinutes(90);
         Duration duration2 = Duration.ofMinutes(30);
         Duration expected = duration1.plus(duration2);
-        taskManager.createTask(new Subtask(
+        taskManager.createSubtask(new Subtask(
                 name, description, epic.getId(),
-                taskManager.getFormatStartTime("12.05.2023 09:00"), duration1
+                timeFormat.getFormatStartTime("12.05.2023 09:00"), duration1
         ));
-        taskManager.createTask(new Subtask(
+        taskManager.createSubtask(new Subtask(
                 name, description, epic.getId(),
-                taskManager.getFormatStartTime("12.05.2023 11:00"), duration2
+                timeFormat.getFormatStartTime("12.05.2023 11:00"), duration2
         ));
         assertEquals(expected, epic.getDuration());
     }
@@ -720,6 +767,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         assertNotNull(subtask.getStatus());
     }
 
+    //Тесты на изменение статуса ЭПИКА
     @Test
     void shouldBeEpicStatusNewIfNoSubtasks() { //Пустой список подзадач
         assertEquals(Status.NEW, makeEpic(name, description).getStatus());
@@ -728,16 +776,16 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldBeEpicStatusNewIfSubtasksAreNew() { //Все подзадачи со статусом NEW
         makeSubtask(name, description); //Epic#1, Subtask#2
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#3
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#4
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#3
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#4
         assertEquals(Status.NEW, taskManager.getEpic(1).getStatus());
     }
 
     @Test
     void shouldBeEpicStatusDoneIfSubtasksAreDone() { //Все подзадачи со статусом DONE
         makeSubtask(name, description); //Epic#1, Subtask#2
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#3
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#4
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#3
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#4
         for (Subtask subtask : taskManager.getListSubtasks()) {
             taskManager.changeSubtaskStatus(subtask.getId(), Status.DONE);
         }
@@ -747,8 +795,8 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldBeEpicStatusInProgressIfSubtasksAreDoneAndNew() { //Подзадачи со статусом DONE и NEW
         Subtask subtask = makeSubtask(name, description); //Epic#1, Subtask#2
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#3
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#4
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#3
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#4
         for (Subtask sub : taskManager.getListSubtasks()) {
             taskManager.changeSubtaskStatus(sub.getId(), Status.DONE);
         }
@@ -759,8 +807,8 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldBeEpicStatusInProgressIfSubtasksAreInProgress() { //Все подзадачи со статусом IN_PROGRESS
         makeSubtask(name, description); //Epic#1, Subtask#2
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#3
-        taskManager.createTask(new Subtask(name, description, 1)); //Subtask#4
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#3
+        taskManager.createSubtask(new Subtask(name, description, 1)); //Subtask#4
         for (Subtask subtask : taskManager.getListSubtasks()) {
             taskManager.changeSubtaskStatus(subtask.getId(), Status.IN_PROGRESS);
         }
@@ -837,8 +885,8 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldClearEpics() {
         Epic epic = makeEpic(name, description);
-        taskManager.createTask(new Subtask(name, description, epic.getId()));
-        taskManager.createTask(new Subtask(name, description, epic.getId()));
+        taskManager.createSubtask(new Subtask(name, description, epic.getId()));
+        taskManager.createSubtask(new Subtask(name, description, epic.getId()));
 
         makeEpic(name, description);
         makeEpic(name, description);
@@ -860,8 +908,8 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void shouldClearSubtasks() {
         Epic epic = makeEpic(name, description);
-        taskManager.createTask(new Subtask(name, description, epic.getId()));
-        taskManager.createTask(new Subtask(name, description, epic.getId()));
+        taskManager.createSubtask(new Subtask(name, description, epic.getId()));
+        taskManager.createSubtask(new Subtask(name, description, epic.getId()));
 
         taskManager.clearSubtasks();
         assertTrue(taskManager.getListSubtasks().isEmpty() && !taskManager.getListEpics().isEmpty());

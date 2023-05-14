@@ -25,7 +25,7 @@ class FileBackedTasksManagerTest extends TaskManagerTest<FileBackedTasksManager>
 
     @AfterEach
     void tearDown() throws IOException {
-        InMemoryTaskManager.setLastId(0);
+        taskManager.id = 0;
         taskManager.clearTasks();
         taskManager.clearSubtasks();
         taskManager.clearEpics();
@@ -44,7 +44,7 @@ class FileBackedTasksManagerTest extends TaskManagerTest<FileBackedTasksManager>
 
     @Test
     void shouldReadEpicFromFile() throws IOException { //Эпик без подзадач
-        taskManager.createTask(new Epic(name, description));
+        taskManager.createEpic(new Epic(name, description));
         List<String> result = Files.readAllLines(file.toPath());
 
         assertEquals(
@@ -59,9 +59,19 @@ class FileBackedTasksManagerTest extends TaskManagerTest<FileBackedTasksManager>
     void shouldReadFileWhenHistoryEmpty() throws IOException { //Пустой список истории
         taskManager.createTask(new Task(name, description));
         taskManager.createTask(new Task(name, description));
-        taskManager.createTask(new Epic(name, description));
+        taskManager.createEpic(new Epic(name, description));
 
         List<String> result = Files.readAllLines(file.toPath());
         assertEquals("", result.get(result.size()-1));
+    }
+
+    @Test //Проверка метода установки максимального id методом setLastId() при десериализации
+    void shouldReadLastIdFromFile() throws IOException {
+        taskManager.createTask(new Task(name, description));// #id1
+        taskManager.createEpic(new Epic(name, description));// #id2
+        taskManager.createTask(new Task(name, description));// #id3
+        FileBackedTasksManager.loadFromFile(file);
+
+        assertEquals(3, taskManager.id);
     }
 }
