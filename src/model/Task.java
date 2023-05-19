@@ -1,7 +1,5 @@
 package model;
 
-import service.Status;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -13,11 +11,15 @@ public class Task { //Класс для создания объектов зад
     protected Status status; // Статус задачи
     protected LocalDateTime startTime; // Время начала выполнения задачи
     protected Duration duration; // Длительность выполнения задачи
+    protected TaskType type;
+
+
 
 
     public Task(String name, String description) {
         this.name = name;
         this.description = description;
+        this.type = TaskType.TASK;
     }
 
     public Task(String name, String description, LocalDateTime startTime, Duration duration) {
@@ -25,6 +27,7 @@ public class Task { //Класс для создания объектов зад
         this.description = description;
         this.startTime = startTime;
         this.duration = duration;
+        this.type = TaskType.TASK;
     }
 
     public int getId() {

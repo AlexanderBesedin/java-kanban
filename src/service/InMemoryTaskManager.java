@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class InMemoryTaskManager implements TaskManager { // Класс хранения задач всех типов
@@ -21,7 +20,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     protected final LinkedHashMap<Integer, Task> tasks = new LinkedHashMap<>();
     protected final LinkedHashMap<Integer, Epic> epics = new LinkedHashMap<>();
     protected final LinkedHashMap<Integer, Subtask> subtasks = new LinkedHashMap<>();
-    protected HistoryManager historyManager = Managers.getDefaultHistory();
+    protected HistoryManager historyManager = Managers.gettHistoryManager();
 
     public InMemoryTaskManager() {
         timeOverlaps = new HashMap<>();

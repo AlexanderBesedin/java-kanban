@@ -9,11 +9,13 @@ public class Subtask extends Task { //Класс для создания объ�
 
     public Subtask(String name, String description, int epicId) {
         super(name, description);
+        this.type = TaskType.SUBTASK;
         this.epicId = epicId;
     }
 
     public Subtask(String name, String description, int epicId, LocalDateTime startTime, Duration duration) {
         super(name, description, startTime, duration);
+        this.type = TaskType.SUBTASK;
         this.epicId = epicId;
     }
 

@@ -1,9 +1,7 @@
 package service;
 
 import exception.*;
-import model.Epic;
-import model.Subtask;
-import model.Task;
+import model.*;
 
 
 import java.io.*;
@@ -18,6 +16,12 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     public final static String TITLE = "id|type|name|status|description|start_time|duration|epic_or_subtasksID\n";
 
+    public FileBackedTasksManager() {
+        this("resources/save.csv");
+    }
+    public FileBackedTasksManager(String filePath) {
+        this.file = new File(filePath);
+    }
     public FileBackedTasksManager(File file) {
         this.file = file;
     }
@@ -138,7 +142,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         save();
     }
 
-    private void save() {
+    protected void save() {
         try {
             Files.deleteIfExists(file.toPath()); // При очередном вызове метода save() удаляем файл для перезаписи
             Files.createFile(file.toPath());

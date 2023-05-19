@@ -1,18 +1,16 @@
 import model.Epic;
+import model.Status;
 import model.Subtask;
 import model.Task;
 import service.*;
 import service.FileBackedTasksManager;
+import service.utils.TimeDurationUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
 
 public class Main {
     private static String homeDir = System.getProperty("user.home");
@@ -31,9 +29,9 @@ public class Main {
         String child = "dev" + "/java-kanban/resources/saved.csv";
         File file = new File(homeDir, child);
 
-        TaskManager taskManager = Managers.getDefault();
+        TaskManager taskManager = Managers.getMemoryManager();
         //InMemoryTaskManager taskManager = (InMemoryTaskManager) Managers.getDefault();
-        taskManager = Managers.getFBManager(file);
+        taskManager = Managers.getFileManager(file);
 
         // условие для тестирования: файл сущ-ет - читаем файл, файла нет - выполняем блок создания и просмотра задач.
         if (file.exists()) {

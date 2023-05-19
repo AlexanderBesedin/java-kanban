@@ -2,7 +2,6 @@ package model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import service.Status;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
