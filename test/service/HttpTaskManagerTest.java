@@ -1,11 +1,14 @@
 package service;
 
+import model.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import service.http.KVServer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,14 +27,49 @@ class HttpTaskManagerTest extends TaskManagerTest<HttpTaskManager> {
 
     @AfterEach
     void tearDown() {
+        taskManager.clearTasks();
+        taskManager.clearSubtasks();
+        taskManager.clearEpics();
         kvServer.stop();
     }
 
     @Test
-    void save() {
+    void shouldLoadTasksAndHistoryFromServer() {
+        Task task = makeTask(name, description); //task id#1
+        Epic epic = makeEpic(name,description); //epic id#2
+        Subtask subtask1 = new Subtask(name, description, 2); //subtask id#3
+        Subtask subtask2 = new Subtask(name, description, 2); //subtask id#4
+        taskManager.createSubtask(subtask1);
+        taskManager.createSubtask(subtask2);
+        List<Task> expectedCreated = List.of(task, epic, subtask1, subtask2);
+
+        List<Task> expectedHistory = List.of(
+                taskManager.getTask(1),
+                taskManager.getEpic(2),
+                taskManager.getSubtask(4),
+                taskManager.getSubtask(3)
+        );
+
+        taskManager = HttpTaskManager.loadFromServer(URL);
+        taskManager.getHistory();
+
+        List<Task> actual = new ArrayList<>();
+        actual.addAll(taskManager.getListTasks());
+        actual.addAll(taskManager.getListEpics());
+        actual.addAll(taskManager.getListSubtasks());
+
+        assertEquals(expectedCreated.toString(),actual.toString());
+        assertEquals(expectedHistory.toString(), taskManager.getHistory().toString());
     }
 
     @Test
-    void loadFromServer() {
+    void shouldGetEmptyServer() {
+        List<Task> actual = new ArrayList<>();
+        actual.addAll(taskManager.getListTasks());
+        actual.addAll(taskManager.getListEpics());
+        actual.addAll(taskManager.getListSubtasks());
+
+        assertTrue(actual.isEmpty());
+        assertTrue(taskManager.getHistory().isEmpty());
     }
 }

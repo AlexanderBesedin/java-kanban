@@ -24,7 +24,7 @@ public class HttpTaskServer {
     private final Gson gson;
     private final TaskManager manager;
 
-    public HttpTaskServer( TaskManager manager) throws IOException {
+    public HttpTaskServer(TaskManager manager) throws IOException {
         this.gson = Managers.getDefaultGson();
         this.manager = manager;
         httpServer = HttpServer.create(new InetSocketAddress("localhost", PORT), 0);
@@ -117,13 +117,13 @@ public class HttpTaskServer {
             }
             response = gson.toJson(epic);
             writeResponse(h, response, 200);
-        } else if (endPath.contains("?id=") && partPath[2].equals("subtask")) {
+        } else if (partPath[3].contains("?id=") && partPath[2].equals("subtask")) {
             id = parseIDFromString(endPath);
 
             if (id == null) {writeResponse(h, "Введен некорректный ID", 405); return;}
             Subtask subtask = manager.getSubtask(id);
             if (subtask == null) {
-                writeResponse(h, "Эпик с ID = " + id + " не существует.", 404);
+                writeResponse(h, "Подзадача с ID = " + id + " не существует.", 404);
                 return;
             }
             response = gson.toJson(subtask);
@@ -144,39 +144,38 @@ public class HttpTaskServer {
             response = gson.toJson(subtasksByEpic);
             writeResponse(h, response, 200);
         }
-
     }
 
     private void handlePostMethod(HttpExchange h) throws IOException {
         Task task = taskFromJson(h);
 
         if (task == null) {
-            writeResponse(h, "Некорректный запрос. Задача не может быть создана или обновлена",200);
+            writeResponse(h, "Некорректный запрос. Задача не может быть создана или обновлена",400);
         } else if (task instanceof Subtask) {
             Subtask subtask = (Subtask) task;
             if (subtask.getId() == 0) {
-                manager.createTask(subtask);
-                writeResponse(h,"", 201);
+                manager.createSubtask(subtask);
+                writeResponse(h,"Создана подзадача с ID = " + subtask.getId(), 201);
             } else {
                 manager.updateSubtask(subtask);
-                writeResponse(h,"",202);
+                writeResponse(h,"Обновлена подзадача с ID = " + subtask.getId(),202);
             }
         } else if (task instanceof Epic) {
             Epic epic = (Epic) task;
             if (epic.getId() == 0) {
                 manager.createEpic(epic);
-                writeResponse(h,"", 201);
+                writeResponse(h,"Создан эпик с ID = " + epic.getId(), 201);
             } else {
                 manager.updateEpic(epic);
-                writeResponse(h,"",202);
+                writeResponse(h,"Обновлен эпик с ID = " + epic.getId(),202);
             }
         } else if (task.getClass() == Task.class) {
             if (task.getId() == 0) {
                 manager.createTask(task);
-                writeResponse(h,"", 201);
+                writeResponse(h,"Создана задача с ID = " + task.getId(), 201);
             } else {
                 manager.updateTask(task);
-                writeResponse(h,"",202);
+                writeResponse(h,"Обновлена задача с ID = " + task.getId(),202);
             }
         }
     }
@@ -189,17 +188,17 @@ public class HttpTaskServer {
         if (endPath.equals("task")) {  // DELETE/ tasks/task - удаление всех задач
             manager.clearTasks();
             if (manager.getListTasks().isEmpty()) {
-                writeResponse(h, "Все задачи удалены.", 204);
+                writeResponse(h, "Все задачи удалены.", 200);
             }
         } else if (endPath.equals("epic")) { // DELETE/ tasks/epic - удаление всех эпиков
             manager.clearEpics();
             if (manager.getListEpics().isEmpty() && manager.getListSubtasks().isEmpty()) {
-                writeResponse(h, "Все эпики с подзадачами удалены.", 204);
+                writeResponse(h, "Все эпики с подзадачами удалены.", 200);
             }
         } else if (endPath.equals("subtask")) {  // DELETE/ tasks/subtask - удаление всех подзадач
             manager.clearSubtasks();
             if (manager.getListSubtasks().isEmpty()) {
-                writeResponse(h, "Все подзадачи удалены.", 204);
+                writeResponse(h, "Все подзадачи удалены.", 200);
             }
         } else if (endPath.contains("?id=") && partPath[2].equals("task")) {// DELETE/ tasks/task/?id= - удаление задачи
             id = parseIDFromString(endPath);
@@ -207,9 +206,10 @@ public class HttpTaskServer {
                 writeResponse(h, "Введен некорректный ID", 405);
                 return;
             }
-            manager.removeTask(id);
-            if (manager.getTask(id) == null) {
-                writeResponse(h, "Задача с ID = " + id + " удалена.", 204);
+            if (manager.removeTask(id)) {
+                writeResponse(h, "Задача с ID = " + id + " удалена.", 200);
+            } else {
+                writeResponse(h, "Задача с ID = " + id + " не существует.", 404);
             }
         } else if (endPath.contains("?id=") && partPath[2].equals("epic")) {// DELETE/ tasks/epic/?id= - удаление эпика
             id = parseIDFromString(endPath);
@@ -217,16 +217,21 @@ public class HttpTaskServer {
                 writeResponse(h, "Введен некорректный ID", 405);
                 return;
             }
-            manager.removeEpic(id);
-            if (manager.getEpic(id) == null) {
-                writeResponse(h, "Эпик с ID = " + id + " удален.", 204);
+            if (manager.removeEpic(id)) {
+                writeResponse(h, "Эпик с ID = " + id + " удален.", 200);
+            } else {
+                writeResponse(h, "Эпик с ID = " + id + " не существует.", 404);
             }
         } else if (endPath.contains("?id=") && partPath[2].equals("subtask")) {// DELETE/ tasks/subtask/?id= - удаление подзадачи
             id = parseIDFromString(endPath);
-            if (id == null) {writeResponse(h, "Введен некорректный ID", 405); return;}
-            manager.removeSubtask(id);
-            if (manager.getSubtask(id) == null) {
-                writeResponse(h, "Эпик с ID = " + id + " удален.", 204);
+            if (id == null) {
+                writeResponse(h, "Введен некорректный ID", 405);
+                return;
+            }
+            if (manager.removeSubtask(id)) {
+                writeResponse(h, "Подзадача с ID = " + id + " удалена.", 200);
+            } else {
+                writeResponse(h, "Подзадача с ID = " + id + " не существует.", 404);
             }
         }
     }

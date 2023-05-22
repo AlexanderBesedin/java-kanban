@@ -176,6 +176,7 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
         if (epic == null) throw new NullPointerException("Переданный эпик не существует.\n");
         if (epics.containsKey(epic.getId())) {
             updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
+            updateEpicStatus(epic);
             epics.put(epic.getId(), epic);
             System.out.println("Обновлен эпик: \n" + epic + "\n" + "Текущий статус: " + epic.getStatus() + '\n');
         } else {
@@ -371,18 +372,19 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
     }
 
     @Override
-    public void removeTask(int id) { // Удалить задачу по идентификатору
+    public boolean removeTask(int id) { // Удалить задачу по идентификатору
         if (tasks.containsKey(id)) { // Проверяем наличие искомой задачи в хэшмапе tasks по ключу
             historyManager.remove(id); // Удаляем из истории просмотров
-            System.out.println("Задача " + tasks.remove(id) + '\n' +
-                    "УДАЛЕНА.\n");
+            System.out.printf("Задача %s УДАЛЕНА.%n", tasks.remove(id));
+            return true;
         } else {
             System.out.println("Задача numID-" + id + " не существует. Удаление невозможно.\n");
+            return false;
         }
     }
 
     @Override
-    public void removeEpic(int id) { // Удалить эпик по идентификатору
+    public boolean removeEpic(int id) { // Удалить эпик по идентификатору
         if (epics.containsKey(id)) { // Проверяем наличие эпика с введенным идентификатором
             boolean condition = epics.get(id).getSubtasksInEpic().isEmpty(); //Условие проверки наличия задач в эпике
             if (!condition) {
@@ -393,15 +395,16 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
                 }
             }
             historyManager.remove(id); // Удаляем эпик из истории просмотров
-            System.out.println("Эпик " + epics.remove(id) + '\n' +
-                    "УДАЛЕН.\n");
+            System.out.printf("Эпик %s УДАЛЕН.%n", epics.remove(id));
+            return true;
         } else {
             System.out.println("Эпик numID-" + id + " не существует. Удаление невозможно.\n");
+            return false;
         }
     }
 
     @Override
-    public void removeSubtask(Integer id) { // Удалить подзадачу по идентификатору
+    public boolean removeSubtask(Integer id) { // Удалить подзадачу по идентификатору
         if (subtasks.containsKey(id)) {
             int epicId = subtasks.get(id).getEpicId();
             Epic epic = epics.get(epicId); // Получаем родительский эпик
@@ -409,10 +412,11 @@ public class InMemoryTaskManager implements TaskManager { // Класс хран
             updateEpicStatus(epic); // Обновляем статус эпика
             updateEpicDuration(epic); // Рассчитываем/обновляем время выполнения эпика
             historyManager.remove(id); // Удаляем  подзадачу из истории просмотров
-            System.out.println("Подзадача " + subtasks.remove(id) + '\n' +
-                    " УДАЛЕНА.\n");
+            System.out.printf("Подзадача %s УДАЛЕНА.", subtasks.remove(id));
+            return true;
         } else {
             System.out.println("Подзадача numID-" + id + " не существует. Удаление невозможно.\n");
+            return false;
         }
     }
 

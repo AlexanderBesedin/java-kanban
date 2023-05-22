@@ -31,11 +31,15 @@ public class HttpTaskManager extends FileBackedTasksManager{
     protected void save() { //метод сохранения состояния менеджера
         try {
             if (tasks.isEmpty() && epics.isEmpty() && subtasks.isEmpty()) return;
-            if (!tasks.isEmpty()) kvTaskClient.put("task", gson.toJson(getListTasks()));
-            if (!epics.isEmpty()) kvTaskClient.put("epic", gson.toJson(getListEpics()));
-            if (!subtasks.isEmpty()) kvTaskClient.put("subtask", gson.toJson(getListSubtasks()));
+            if (!tasks.isEmpty()) kvTaskClient.put("task/", gson.toJson(getListTasks()));
+            if (!epics.isEmpty()) kvTaskClient.put("epic/", gson.toJson(getListEpics()));
+            if (!subtasks.isEmpty()) kvTaskClient.put("subtask/", gson.toJson(getListSubtasks()));
 
-            kvTaskClient.put("history", gson.toJson(getHistory()));
+            List<Integer> history = new ArrayList<>();
+            for (Task task : historyManager.getHistory()) {
+                history.add(task.getId());
+            }
+            kvTaskClient.put("history/", gson.toJson(history));
         } catch (JsonIOException e) {
             System.out.println("Возникла ошибка конвертации В json.");
         }
@@ -47,29 +51,26 @@ public class HttpTaskManager extends FileBackedTasksManager{
         TypeToken<List<Task>> taskTypeToken = new TypeToken<>() {};
         TypeToken<List<Epic>> epicTypeToken = new TypeToken<>() {};
         TypeToken<List<Subtask>>  subtaskTypeToken = new TypeToken<>() {};
-        TypeToken<List<Subtask>>  historyTypeToken = new TypeToken<>() {};
+        TypeToken<List<Integer>>  historyTypeToken = new TypeToken<>() {};
 
         Map<Integer, Task> allTasks = new HashMap<>(); //Мапа для всех задач
 
         try {
             List<Task> listTasks = httpTaskManager.gson.fromJson(
-                    httpTaskManager.kvTaskClient.load("task"), taskTypeToken.getType()
-            );
+                    httpTaskManager.kvTaskClient.load("task/"), taskTypeToken.getType());
             List<Epic> listEpics = httpTaskManager.gson.fromJson(
-                    httpTaskManager.kvTaskClient.load("epic"), epicTypeToken.getType()
-            );
+                    httpTaskManager.kvTaskClient.load("epic/"), epicTypeToken.getType());
             List<Subtask> listSubtasks = httpTaskManager.gson.fromJson(
-                    httpTaskManager.kvTaskClient.load("subtask"), subtaskTypeToken.getType()
-            );
+                    httpTaskManager.kvTaskClient.load("subtask/"), subtaskTypeToken.getType());
 
-            if (!listTasks.isEmpty()) {
+            if (listTasks != null) {
                 for (Task task : listTasks) {
                     httpTaskManager.tasks.put(task.getId(), task);
                     allTasks.put(task.getId(), task);
                 }
             }
 
-            if (!listEpics.isEmpty()) {
+            if (listEpics != null) {
                 for (Epic epic : listEpics) {
                     httpTaskManager.epics.put(epic.getId(), epic);
                     allTasks.put(epic.getId(), epic);
@@ -77,7 +78,7 @@ public class HttpTaskManager extends FileBackedTasksManager{
                 }
             }
 
-            if (!listSubtasks.isEmpty()) {
+            if (listSubtasks != null) {
                 for (Subtask subtask: listSubtasks) {
                     httpTaskManager.subtasks.put(subtask.getId(), subtask);
                     allTasks.put(subtask.getId(), subtask);
@@ -88,11 +89,10 @@ public class HttpTaskManager extends FileBackedTasksManager{
             for (Integer id : allTasks.keySet()) { maxId = (maxId < id) ? id : maxId;}
             httpTaskManager.id = maxId; // Восстановили последний максимальный id
 
-            List<Integer> history = httpTaskManager.gson.fromJson(
-                    httpTaskManager.kvTaskClient.load("history"), historyTypeToken.getType()
-            );
-
-            if (!history.isEmpty()) {
+            List<Integer> history =
+                    httpTaskManager.gson.fromJson(
+                        httpTaskManager.kvTaskClient.load("history/"), historyTypeToken.getType());
+            if (history != null) {
                 for (Integer id : history) {
                     httpTaskManager.historyManager.add(allTasks.getOrDefault(id, null));
                 }

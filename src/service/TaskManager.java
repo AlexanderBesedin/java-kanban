@@ -44,11 +44,11 @@ public interface TaskManager {
 
     void changeSubtaskStatus(int id, Status status);
 
-    void removeTask(int id); // Удалить задачу по идентификатору
+    boolean removeTask(int id); // Удалить задачу по идентификатору
 
-    void removeEpic(int id); // Удалить эпик по идентификатору
+    boolean removeEpic(int id); // Удалить эпик по идентификатору
 
-    void removeSubtask(Integer id); // Удалить подзадачу по идентификатору
+    boolean removeSubtask(Integer id); // Удалить подзадачу по идентификатору
 
     void clearTasks(); // Удалить все задачи
 

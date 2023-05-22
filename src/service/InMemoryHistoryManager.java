@@ -10,7 +10,7 @@ import java.util.Map;
 public class InMemoryHistoryManager implements HistoryManager {
     private Node<Task> first;
     private Node<Task> last;
-    private static Map<Integer, Node<Task>> historyMap = new HashMap<>();
+    private Map<Integer, Node<Task>> historyMap = new HashMap<>();
 
     @Override
     public void add(Task task) { // Метод заполнения истории просмотров, где новый просмотр добавляется в КОНЕЦ списка
