@@ -54,58 +54,6 @@ class HttpTaskServerTest {
         httpTaskServer.stop();
     }
 
-    private Task makeTask(String name, String description) {
-        Task task = new Task(name, description);
-        taskManager.createTask(task);
-        return task;
-    }
-
-    private Epic makeEpic(String name, String description) {
-        Epic epic = new Epic(name, description);
-        taskManager.createEpic(epic);
-        return epic;
-    }
-
-    private Subtask makeSubtask(String name, String description) {
-        Epic epic = makeEpic(name, description); //#1
-        Subtask subtask = new Subtask(name, description, epic.getId());
-        taskManager.createSubtask(subtask); //#2
-        return subtask;
-    }
-
-    private HttpResponse<String> createGetRequest(String endpoint) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
-        URI uri = URI.create(baseURL + endpoint);
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(uri)
-                .header("Accept", "application/json")
-                .build();
-
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    private HttpResponse<String> createDeleteRequest(String endpoint) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
-        URI uri = URI.create(baseURL + endpoint);
-        HttpRequest request = HttpRequest.newBuilder().uri(uri).DELETE().build();
-
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    private HttpResponse<String> createPostRequest(String endpoint, String json) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
-        URI uri = URI.create(baseURL + endpoint);
-        HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(json);
-        HttpRequest request = HttpRequest.newBuilder()
-                .POST(body)
-                .uri(uri)
-                .header("Accept", "application/json")
-                .build();
-
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-
     //shouldGET
     @Test
     void shouldGetPrioritizedTaskListByTime() throws IOException, InterruptedException { // GET tasks/
@@ -531,5 +479,57 @@ class HttpTaskServerTest {
     void shouldDoNotPostNullTask() throws IOException, InterruptedException { // POST /tasks/ null
         HttpResponse<String> response = createPostRequest("task", gson.toJson(null));
         assertEquals("Некорректный запрос. Задача не может быть создана или обновлена", response.body());
+    }
+
+    private Task makeTask(String name, String description) {
+        Task task = new Task(name, description);
+        taskManager.createTask(task);
+        return task;
+    }
+
+    private Epic makeEpic(String name, String description) {
+        Epic epic = new Epic(name, description);
+        taskManager.createEpic(epic);
+        return epic;
+    }
+
+    private Subtask makeSubtask(String name, String description) {
+        Epic epic = makeEpic(name, description); //#1
+        Subtask subtask = new Subtask(name, description, epic.getId());
+        taskManager.createSubtask(subtask); //#2
+        return subtask;
+    }
+
+    private HttpResponse<String> createGetRequest(String endpoint) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        URI uri = URI.create(baseURL + endpoint);
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(uri)
+                .header("Accept", "application/json")
+                .build();
+
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> createDeleteRequest(String endpoint) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        URI uri = URI.create(baseURL + endpoint);
+        HttpRequest request = HttpRequest.newBuilder().uri(uri).DELETE().build();
+
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> createPostRequest(String endpoint, String json) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        URI uri = URI.create(baseURL + endpoint);
+        HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(json);
+        HttpRequest request = HttpRequest.newBuilder()
+                .POST(body)
+                .uri(uri)
+                .header("Accept", "application/json")
+                .build();
+
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 }

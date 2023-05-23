@@ -27,9 +27,6 @@ class HttpTaskManagerTest extends TaskManagerTest<HttpTaskManager> {
 
     @AfterEach
     void tearDown() {
-        taskManager.clearTasks();
-        taskManager.clearSubtasks();
-        taskManager.clearEpics();
         kvServer.stop();
     }
 
