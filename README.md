@@ -84,14 +84,14 @@
 `Node<Task> first` и `Node<Task> last`.<br>
 В совокупности с `Node<Task> first, Node<Task> last` значения `historyViews` образуют структуру данных двусвязного списка, 
 так называемого `CustomLinkedList`, где каждый новый просмотр добавляется в конец списка.<br>
-Если какая-либо задача просматривалась несколько раз, в истории отображается только последний просмотр. 
+Если какая-либо задача просматривалась несколько раз, **в истории отображается только последний просмотр**. 
 Предыдущий просмотр удаляется сразу же после появления нового за **O(1)** благодаря реализации хранилища 
 в виде `Map<Integer, Node<Task>> historyViews`.
 
 ![CustomLinkedList](src/main/resources/CustomLinkedList.png)
 </details>
 
-Все вышеописанные функции реализованы в базовой имплементации менеджера задач `InMemoryTaskManager`.
+> *Все вышеописанные функции реализованы в базовой имплементации менеджера задач `InMemoryTaskManager`.*
 
 ### Особенности реализации хранения данных приложения
 За хранение задач отвечают следующие имплементации [TaskManager][1]:
@@ -117,7 +117,7 @@
  Структура объектов взаимодействия API приложения:
 ```java
 FinalClient <-> HttpTaskServer <-> HttpTaskManager <-> KVTaskClient <-> KVServer
-                     (API)                                             (storage)
+(Web Browser)                           (API)                          (Storage)
 ```
 `HttpTaskServer` обрабатывает запросы **конечного клиента** по следующим эндпоинтам:
 - `/tasks` - только GET-запросы получения всех существующих задач, сортированных по приоритету - время `startTime`.
@@ -134,7 +134,7 @@ FinalClient <-> HttpTaskServer <-> HttpTaskManager <-> KVTaskClient <-> KVServer
    - используя web URL: `https://github.com/AlexanderBesedin/java-kanban.git`
    - используя SSH-ключ: `git@github.com:AlexanderBesedin/java-kanban.git`
    - или просто скачайте zip-архив по [ссылке][15].
-2. Запустите проект в выбранной IDE: `src/main/java/Main.java`
+2. Запустите файл проекта в выбранной IDE по пути: `src/main/java/Main.java`.
 3. Приложение работает по адресу: `http://localhost:8080/tasks`.
 </details>
 
@@ -163,7 +163,7 @@ FinalClient <-> HttpTaskServer <-> HttpTaskManager <-> KVTaskClient <-> KVServer
 
 ### Статус проекта 
 На данный момент проект завершен, возможен небольшой рефакторинг методов, структуры для приведения 
-в соответствии лучшим практикам.
+в соответствие лучшим практикам.
 
 
 
